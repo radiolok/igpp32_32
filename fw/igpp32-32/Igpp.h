@@ -23,6 +23,33 @@ SOFTWARE.*/
 #ifndef IGPP_H_
 #define IGPP_H_
 
+#include "define.h"
 
+void igppInit();
+
+
+inline void igppLatch()
+{
+    P1OUT |= BIT0 | BIT3;
+    //250ns
+    P1OUT &= ~(BIT0 | BIT3);
+}
+
+inline void igppCathodeOn() {P1OUT |= BIT5;}
+inline void igppCathodeOff() {P1OUT &= ~BIT5;}
+
+void igppAnodeOn();
+
+void igppAnodeOff();
+
+void igppAnodeWait(uint16_t us, void (*callback)());
+
+void igppSend(uint8_t column);
+
+void igppSendAnode(uint8_t column);
+
+void igppSendCathode(uint8_t column);
+
+void igppAnodeWait(uint16_t us, void (*callback)());
 
 #endif /* IGPP_H_ */

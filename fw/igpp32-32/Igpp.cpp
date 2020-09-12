@@ -21,23 +21,117 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.*/
 
 #include <Igpp.h>
-#include "define.h"
 
 //Double buffering mechanism
 volatile uint8_t frameBuffer[2][(DISPLAY_HEIGTH >> 3) * DISPLAY_WIDTH] = {{0x00}, {0x00}};
 
 volatile uint8_t currentFrame = 0;//or 1
 
-uint8_t sendCathode(uint8_t num)
-{
-    uint8_t status = 0;
+/*
+anode_latch P1.0
+anode_mr P1.1
+anode OE P1.2
+anode srclk P4.0
+anode DI P4.4
 
-    return status;
+cathode_latch P1.3
+cathode_mr P1.4
+cathode OE P1.5
+cathode srclk P4.3
+cathode DI P4.1
+*/
+
+void igppInit()
+{
+    P1DIR |= BIT0 | BIT1 | BIT2 | BIT3 | BIT4 | BIT5;
+    P4DIR |= BIT0 | BIT1 | BIT3 | BIT4;
+    P1OUT &= ~(BIT0 | BIT1 | BIT2 | BIT3 | BIT4 | BIT5);
+    P4OUT &= ~(BIT0 | BIT1 | BIT3 | BIT4);
+
+    //Scan TA0: 40kHz
+
+    TA0R = 0x00;
+    TA0CCTL0 |= CCIE; //CCR0 interrupt
+    TA0CCR0 = 150;// 6MHz/ 40kHz
+    TA0CTL |= TASSEL_2 | MC_1 ; //SMCLK 6MHz
+
+   //TEMP:
+    P2DIR |= BIT6;
+    //timeout TB):
+
+    TB0R = 0x00;
+    TB0CCTL0 |= CCIE; //CCR0 interrupt
+    TB0CTL |= TBSSEL_2;        //SMCLK, 6MHz. Inerrupt Enabled , flag enabled
+
 }
 
-uint8_t send Anode(uint8_t num)
+void igppAnodeOff()
 {
-    uint8_t status = 0;
+    P1OUT &= ~BIT2;
+}
 
-    return status;
+inline void igppAnodeOn()
+{
+    P1OUT |= BIT2;
+    igppAnodeWait(20, igppAnodeOff);
+}
+
+void igppSend(uint8_t column)
+{
+
+}
+
+void igppSendAnode(uint8_t column)
+{
+
+}
+
+void igppSendCathode(uint8_t column)
+{
+
+}
+
+void (*m_callback)()  = NULL;
+
+
+inline void igppAnodeWait(uint16_t us, void (*callback)())
+{
+//Time setup   TimerTB0:
+    TB0CCR0 = us * 6 ; // 6MHz SMCL
+    TB0R = 0;
+    TB0CTL |= MC_1; // Count up to the TB0CCR0 value
+    m_callback = callback;
+}
+
+//This timer does 50kHz f_scan
+// Timer B0 interrupt service routine
+#if defined(__TI_COMPILER_VERSION__) || defined(__IAR_SYSTEMS_ICC__)
+#pragma vector=TIMER0_A0_VECTOR
+__interrupt void TIMERA0_ISR (void)
+#elif defined(__GNUC__)
+void __attribute__ ((interrupt(TIMER0_A0_VECTOR))) TIMERA0_ISR (void)
+#else
+#error Compiler not supported!
+#endif
+{
+    P2OUT |= BIT6;
+    //250ns
+    P2OUT &= ~BIT6;
+    igppAnodeOn();
+}
+
+// Timer B0 interrupt service routine
+#if defined(__TI_COMPILER_VERSION__) || defined(__IAR_SYSTEMS_ICC__)
+#pragma vector=TIMER0_B0_VECTOR
+__interrupt void TIMERB0_ISR (void)
+#elif defined(__GNUC__)
+void __attribute__ ((interrupt(TIMER0_B0_VECTOR))) TIMERB0_ISR (void)
+#else
+#error Compiler not supported!
+#endif
+{
+    TB0CTL &= ~MC_1;
+    if (m_callback)
+        (m_callback)();
+
 }

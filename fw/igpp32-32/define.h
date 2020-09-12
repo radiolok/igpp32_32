@@ -5,6 +5,14 @@
  *      Author: radiolok
  */
 
+#include <msp430.h>
+
+#include "stdint.h"
+
+#ifndef NULL
+    #define NULL 0
+#endif
+
 #ifndef DEFINE_H_
 #define DEFINE_H_
 
@@ -16,6 +24,6 @@
 #define PANEL_COLS (3)
 
 #define DISPLAY_WIDTH (PANEL_WIDTH * PANEL_COLS)
-#define DISPLAY_HEIGTH (PANEL_HEIGTH * PANEL_ROWS)
+#define DISPLAY_HEIGTH (PANEL_HEIGHT * PANEL_ROWS)
 
 #endif /* DEFINE_H_ */
