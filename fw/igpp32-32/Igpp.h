@@ -25,6 +25,8 @@ SOFTWARE.*/
 
 #include "define.h"
 
+#include "Spi.h"
+
 void igppInit();
 
 

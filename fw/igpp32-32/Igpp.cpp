@@ -44,19 +44,17 @@ cathode DI P4.1
 void igppInit()
 {
     P1DIR |= BIT0 | BIT1 | BIT2 | BIT3 | BIT4 | BIT5;
-    P4DIR |= BIT0 | BIT1 | BIT3 | BIT4;
     P1OUT &= ~(BIT0 | BIT1 | BIT2 | BIT3 | BIT4 | BIT5);
-    P4OUT &= ~(BIT0 | BIT1 | BIT3 | BIT4);
+
+    SpiInit();
 
     //Scan TA0: 40kHz
 
     TA0R = 0x00;
     TA0CCTL0 |= CCIE; //CCR0 interrupt
-    TA0CCR0 = 150;// 6MHz/ 40kHz
-    TA0CTL |= TASSEL_2 | MC_1 ; //SMCLK 6MHz
+    TA0CCR0 = 150;// 7.5MHz/ 40kHz
+    TA0CTL |= TASSEL_2 | MC_1 | ID_2; //SMCLK 26MHz div 4 = 7.5MHz
 
-   //TEMP:
-    P2DIR |= BIT6;
     //timeout TB):
 
     TB0R = 0x00;
@@ -65,9 +63,14 @@ void igppInit()
 
 }
 
+uint8_t anodesData[2][12] = {{0xAA},{0x55}};
+uint8_t currentAnodesData = 0;
+
 void igppAnodeOff()
 {
     P1OUT &= ~BIT2;
+    currentAnodesData = (currentAnodesData + 1) & 0x01;
+    SpiASend(anodesData[currentAnodesData], 12);
 }
 
 inline void igppAnodeOn()
@@ -114,9 +117,6 @@ void __attribute__ ((interrupt(TIMER0_A0_VECTOR))) TIMERA0_ISR (void)
 #error Compiler not supported!
 #endif
 {
-    P2OUT |= BIT6;
-    //250ns
-    P2OUT &= ~BIT6;
     igppAnodeOn();
 }
 

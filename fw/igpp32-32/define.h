@@ -16,6 +16,8 @@
 #ifndef DEFINE_H_
 #define DEFINE_H_
 
+#define SPI_BUFFER_SIZE (32)
+#define SPI_BUFFER_MASK (SPI_BUFFER_SIZE - 1)
 
 #define PANEL_WIDTH (32)
 #define PANEL_HEIGHT (32)

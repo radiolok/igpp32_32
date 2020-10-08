@@ -63,11 +63,11 @@ int main(void)
 
     __delay_cycles(782000);
 
-    UCSCTL4 |= SELM_3;                       //MCLK = DCOCLK = 24MHz
+    UCSCTL4 |= SELM_5;                       //MCLK = XT2 = 26MHz
     UCSCTL5 |= DIVM_0;                       //f_dco/1
 
-    UCSCTL4 |= SELS_3;                      // SMCLK = DCOCLK = 6MHz
-    UCSCTL5 |= DIVS_2;                      // f_dco / 4
+    UCSCTL4 |= SELS_5;                      // SMCLK = XT2/4 = 26MHz
+    UCSCTL5 |= DIVS_0;                      // f_dco / 1
 
     igppInit();
 
