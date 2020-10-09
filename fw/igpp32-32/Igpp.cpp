@@ -61,16 +61,30 @@ void igppInit()
     TB0CCTL0 |= CCIE; //CCR0 interrupt
     TB0CTL |= TBSSEL_2;        //SMCLK, 6MHz. Inerrupt Enabled , flag enabled
 
+    P1OUT |= BIT1; //MR is up
 }
 
-uint8_t anodesData[2][12] = {{0xAA},{0x55}};
+uint8_t anodesData[2][12] = {
+                  {0xAA, 0xAA, 0xAA, 0xAA,
+                   0xAA, 0xAA, 0xAA, 0xAA,
+                   0xAA, 0xAA, 0xAA, 0xAA},
+                  {0x55, 0x55, 0x55, 0x55,
+                   0x55, 0x55, 0x55, 0x55,
+                   0x55, 0x55, 0x55, 0x55}
+                    };
 uint8_t currentAnodesData = 0;
+
+void igppAnodesLatch()
+{
+    P1OUT  |= BIT0;
+    P1OUT  &= ~BIT0;
+}
 
 void igppAnodeOff()
 {
     P1OUT &= ~BIT2;
     currentAnodesData = (currentAnodesData + 1) & 0x01;
-    SpiASend(anodesData[currentAnodesData], 12);
+    SpiASend(anodesData[currentAnodesData], 12, igppAnodesLatch);
 }
 
 inline void igppAnodeOn()

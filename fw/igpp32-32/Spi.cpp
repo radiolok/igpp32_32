@@ -42,6 +42,9 @@ void SpiInit()
     UCA0BR0 = 4;// 26MHz/4 = 7.5MHz
 
     //UCA0IE = UCTXIE; //enable interrupt
+    DMACTL0 |= DMA0TSEL_17;  // UCB1TXIFG as trigger
+    DMA0CTL = DMASRCINCR_3 + DMADSTBYTE + DMASRCBYTE + DMAIE + DMAIFG;
+    __data16_write_addr((unsigned short) &DMA0DA,(unsigned long) &UCA0TXBUF);
 
 }
 
@@ -56,17 +59,18 @@ volatile uint16_t SpiABufferTxHead = 0;
 volatile uint16_t SpiABufferTxLength = 0;
 
 /**Anodes Spi*/
-void SpiASend(uint8_t* data, uint16_t size)
+void (*m_SpiACallback)()  = NULL;
+void SpiASend(uint8_t* data, uint16_t size, void (*callback)())
 {
-    DMACTL0 |= DMA1TSEL_17;  // UCB1TXIFG as trigger
-    DMA1CTL = DMASRCINCR_3 + DMADSTBYTE + DMASRCBYTE + DMAIE + DMAEN;
-    __data16_write_addr((unsigned short) &DMA1SA,(unsigned long) *data);
-    __data16_write_addr((unsigned short) &DMA1DA,(unsigned long) &UCA0TXBUF);
-    DMA1SZ = size;
-    if (!(DMA1CTL & DMAEN)) {
-        DMA1SZ = size;
-        DMA1CTL |= DMAEN;
+    m_SpiACallback = callback;
+
+    __data16_write_addr((unsigned short) &DMA0SA,(unsigned long) data);
+    DMA0SZ = size;
+    if (!(DMA0CTL & DMAEN)) {
+        DMA0SZ = size;
+        DMA0CTL |= DMAEN;
     }
+
     UCA0IFG &= ~UCTXIFG;
     UCA0IFG |=  UCTXIFG;
 }
@@ -117,6 +121,10 @@ void __attribute__ ((interrupt(DMA_VECTOR))) DmaIsr (void)
 #endif
 {
     if (DMAIV & DMAIV_DMA0IFG) {
+        if (m_SpiACallback)
+        {
+            (m_SpiACallback)();
+        }
         return;
     }
     if (DMAIV & DMAIV_DMA1IFG) {
@@ -125,5 +133,4 @@ void __attribute__ ((interrupt(DMA_VECTOR))) DmaIsr (void)
     if (DMAIV & DMAIV_DMA2IFG) {
         return;
     }
-
 }

@@ -29,6 +29,11 @@ SOFTWARE.*/
 
 void igppInit();
 
+inline void igppClear()
+{
+    P1OUT  &= ~BIT1;
+    P1OUT  |= BIT1;
+}
 
 inline void igppLatch()
 {
