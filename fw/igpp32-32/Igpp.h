@@ -29,25 +29,36 @@ SOFTWARE.*/
 
 void igppInit();
 
-inline void igppClear()
+void igppAnodeClear();
+
+inline void igppCathodeClear()
 {
-    P1OUT  &= ~BIT1;
-    P1OUT  |= BIT1;
+    P1OUT  &= ~BIT4;
+    P1OUT  |= BIT4;
 }
 
-inline void igppLatch()
+inline void igppCathodeTick()
 {
-    P1OUT |= BIT0 | BIT3;
-    //250ns
-    P1OUT &= ~(BIT0 | BIT3);
+    P4OUT  |= BIT3;
+    P4OUT  &= ~BIT3;
 }
+
+inline void igppCathodeDataHigh()
+{
+    P4OUT  |= BIT1;
+}
+
+inline void igppCathodeDataLow()
+{
+    P4OUT  &= ~BIT1;
+}
+
+void igppLatch();
 
 inline void igppCathodeOn() {P1OUT |= BIT5;}
 inline void igppCathodeOff() {P1OUT &= ~BIT5;}
 
-void igppAnodeOn();
-
-void igppAnodeOff();
+void igppTick();
 
 void igppAnodeWait(uint16_t us, void (*callback)());
 

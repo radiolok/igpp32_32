@@ -46,6 +46,9 @@ void igppInit()
     P1DIR |= BIT0 | BIT1 | BIT2 | BIT3 | BIT4 | BIT5;
     P1OUT &= ~(BIT0 | BIT1 | BIT2 | BIT3 | BIT4 | BIT5);
 
+    P4DIR |= BIT1 | BIT3;
+    P4OUT &= ~(BIT1 | BIT3);
+
     SpiInit();
 
     //Scan TA0: 40kHz
@@ -61,7 +64,9 @@ void igppInit()
     TB0CCTL0 |= CCIE; //CCR0 interrupt
     TB0CTL |= TBSSEL_2;        //SMCLK, 6MHz. Inerrupt Enabled , flag enabled
 
-    P1OUT |= BIT1; //MR is up
+    P1OUT |= BIT1 | BIT4; //MR is up
+
+    igppTick();
 }
 
 uint8_t anodesData[2][12] = {
@@ -74,23 +79,46 @@ uint8_t anodesData[2][12] = {
                     };
 uint8_t currentAnodesData = 0;
 
-void igppAnodesLatch()
+void igppAnodeClear()
 {
-    P1OUT  |= BIT0;
-    P1OUT  &= ~BIT0;
+    P1OUT  &= ~BIT1;
+    P1OUT  |= BIT1;
+    igppTick();
 }
 
-void igppAnodeOff()
+void igppLatch()
 {
-    P1OUT &= ~BIT2;
+    static uint8_t cathodePos = 0;
+
+    while (UCA0STAT & UCBUSY)
+    {
+        ;
+    }
+    if (cathodePos == 0)
+    {
+        igppCathodeClear();
+        igppCathodeDataHigh();
+        igppCathodeTick();
+        igppCathodeDataLow();
+    }
+    else
+    {
+        igppCathodeTick();
+    }
+    if (++cathodePos >= DISPLAY_WIDTH)
+    {
+        cathodePos = 0;
+    }
+    P1OUT  |= BIT0 | BIT3;
+    P1OUT  &= ~( BIT0 | BIT3);
+    igppAnodeWait(20, igppAnodeClear);
+}
+
+void igppTick()
+{
+
     currentAnodesData = (currentAnodesData + 1) & 0x01;
-    SpiASend(anodesData[currentAnodesData], 12, igppAnodesLatch);
-}
-
-inline void igppAnodeOn()
-{
-    P1OUT |= BIT2;
-    igppAnodeWait(20, igppAnodeOff);
+    SpiASend(anodesData[currentAnodesData], 12, igppLatch);
 }
 
 void igppSend(uint8_t column)
@@ -131,7 +159,7 @@ void __attribute__ ((interrupt(TIMER0_A0_VECTOR))) TIMERA0_ISR (void)
 #error Compiler not supported!
 #endif
 {
-    igppAnodeOn();
+    //igppTick();
 }
 
 // Timer B0 interrupt service routine

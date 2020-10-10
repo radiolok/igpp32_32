@@ -26,14 +26,14 @@ SOFTWARE.*/
 
 void SpiInit()
 {
-    P4SEL |= BIT0 | BIT1 | BIT3 | BIT4;
+    P4SEL |= BIT0 | BIT4;
 
     PMAPKEYID = 0x2D52;
 
     P4MAP0 = PM_UCA0CLK;
-    P4MAP1 = PM_UCB0SIMO;
+    //P4MAP1 = PM_UCB0SIMO;
 
-    P4MAP3 = PM_UCB0CLK;
+    //P4MAP3 = PM_UCB0CLK;
     P4MAP4 = PM_UCA0SIMO;
 
     UCA0CTL0 = UCMST | UCSYNC;//MSB, syncronous
