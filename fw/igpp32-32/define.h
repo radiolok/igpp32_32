@@ -22,8 +22,8 @@
 #define PANEL_WIDTH (32)
 #define PANEL_HEIGHT (32)
 
-#define PANEL_ROWS (3)
-#define PANEL_COLS (3)
+#define PANEL_ROWS (1)
+#define PANEL_COLS (1)
 
 #define DISPLAY_WIDTH (PANEL_WIDTH * PANEL_COLS)
 #define DISPLAY_HEIGTH (PANEL_HEIGHT * PANEL_ROWS)

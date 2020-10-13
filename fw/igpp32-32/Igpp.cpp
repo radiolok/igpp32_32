@@ -27,6 +27,8 @@ volatile uint8_t frameBuffer[2][(DISPLAY_HEIGTH >> 3) * DISPLAY_WIDTH] = {{0x00}
 
 volatile uint8_t currentFrame = 0;//or 1
 
+volatile uint8_t cathodePos = 0;
+
 /*
 anode_latch P1.0
 anode_mr P1.1
@@ -69,16 +71,6 @@ void igppInit()
     igppTick();
 }
 
-uint8_t anodesData[2][12] = {
-                  {0xAA, 0xAA, 0xAA, 0xAA,
-                   0xAA, 0xAA, 0xAA, 0xAA,
-                   0xAA, 0xAA, 0xAA, 0xAA},
-                  {0x55, 0x55, 0x55, 0x55,
-                   0x55, 0x55, 0x55, 0x55,
-                   0x55, 0x55, 0x55, 0x55}
-                    };
-uint8_t currentAnodesData = 0;
-
 void igppAnodeClear()
 {
     P1OUT  &= ~BIT1;
@@ -88,8 +80,6 @@ void igppAnodeClear()
 
 void igppLatch()
 {
-    static uint8_t cathodePos = 0;
-
     while (UCA0STAT & UCBUSY)
     {
         ;
@@ -116,9 +106,8 @@ void igppLatch()
 
 void igppTick()
 {
-
-    currentAnodesData = (currentAnodesData + 1) & 0x01;
-    SpiASend(anodesData[currentAnodesData], 12, igppLatch);
+    uint8_t* AnodesDataPtr = (uint8_t*)(frameBuffer[currentFrame] + (ANODE_BYTES * cathodePos));
+    SpiASend(AnodesDataPtr, ANODE_BYTES, igppLatch);
 }
 
 void igppSend(uint8_t column)

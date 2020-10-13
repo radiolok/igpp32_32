@@ -48,11 +48,6 @@ void SpiInit()
 
 }
 
-void SpiATest()
-{
-    UCA0TXBUF = 0xAA;
-}
-
 
 uint8_t SpiABuffer[SPI_BUFFER_SIZE] = {0};
 volatile uint16_t SpiABufferTxHead = 0;
@@ -74,13 +69,6 @@ void SpiASend(uint8_t* data, uint16_t size, void (*callback)())
     UCA0IFG &= ~UCTXIFG;
     UCA0IFG |=  UCTXIFG;
 }
-
-/**Cathodes Spi*/
-void SpiBSend(uint8_t* data, uint16_t size)
-{
-
-}
-
 
 #if defined(__TI_COMPILER_VERSION__) || defined(__IAR_SYSTEMS_ICC__)
 #pragma vector=USCI_A0_VECTOR

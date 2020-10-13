@@ -26,12 +26,9 @@ SOFTWARE.*/
 
 #include <define.h>
 
-void SpiATest();
 
 void SpiInit();
 
-void SpiASendByte(uint8_t data);
 void SpiASend(uint8_t* data, uint16_t size, void (*callback)());
-void SpiBSend(uint8_t* data, uint16_t size);
 
 #endif /* SPI_H_ */
