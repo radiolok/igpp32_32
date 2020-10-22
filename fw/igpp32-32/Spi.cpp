@@ -26,14 +26,16 @@ SOFTWARE.*/
 
 void SpiInit()
 {
-    P4SEL |= BIT0 | BIT4;
+    P4SEL |= BIT0 | BIT1 | BIT3 | BIT4;
 
     PMAPKEYID = 0x2D52;
 
     P4MAP0 = PM_UCA0CLK;
-    //P4MAP1 = PM_UCB0SIMO;
+    P4MAP1 = PM_UCB0SIMO;
 
-    //P4MAP3 = PM_UCB0CLK;
+    PMAPKEYID = 0x2D52;
+
+    P4MAP3 = PM_UCB0CLK;
     P4MAP4 = PM_UCA0SIMO;
 
     UCA0CTL0 = UCMST | UCSYNC;//MSB, syncronous
@@ -41,17 +43,20 @@ void SpiInit()
 
     UCA0BR0 = 4;// 26MHz/4 = 7.5MHz
 
+    UCB0CTL0 = UCMST | UCSYNC;//MSB, syncronous
+    UCB0CTL1 = UCSSEL_2; //SMCLK
+
+    UCB0BR0 = 4;// 26MHz/4 = 7.5MHz
+
     //UCA0IE = UCTXIE; //enable interrupt
-    DMACTL0 |= DMA0TSEL_17;  // UCB1TXIFG as trigger
+    DMACTL0 |= DMA0TSEL_17;  // UCA0TXIFG as trigger
     DMA0CTL = DMASRCINCR_3 + DMADSTBYTE + DMASRCBYTE + DMAIE + DMAIFG;
     __data16_write_addr((unsigned short) &DMA0DA,(unsigned long) &UCA0TXBUF);
 
+    DMACTL0 |= DMA0TSEL_19;  // UCB0TXIFG as trigger
+    DMA1CTL = DMASRCINCR_3 + DMADSTBYTE + DMASRCBYTE + DMAIE + DMAIFG;
+    __data16_write_addr((unsigned short) &DMA1DA,(unsigned long) &UCB0TXBUF);
 }
-
-
-uint8_t SpiABuffer[SPI_BUFFER_SIZE] = {0};
-volatile uint16_t SpiABufferTxHead = 0;
-volatile uint16_t SpiABufferTxLength = 0;
 
 /**Anodes Spi*/
 void (*m_SpiACallback)()  = NULL;
@@ -70,35 +75,24 @@ void SpiASend(uint8_t* data, uint16_t size, void (*callback)())
     UCA0IFG |=  UCTXIFG;
 }
 
-#if defined(__TI_COMPILER_VERSION__) || defined(__IAR_SYSTEMS_ICC__)
-#pragma vector=USCI_A0_VECTOR
-__interrupt void SPI_A_ISR (void)
-#elif defined(__GNUC__)
-void __attribute__ ((interrupt(USCI_A0_VECTOR))) SPI_A_ISR (void)
-#else
-#error Compiler not supported!
-#endif
+
+/**Cathodes Spi*/
+void (*m_SpiBCallback)()  = NULL;
+void SpiBSend(uint8_t* data, uint16_t size, void (*callback)())
 {
-    if (UCA0IV & 0x04)
-    {
-        if ( SpiABufferTxHead < SpiABufferTxLength)
-        {
-            UCA0TXBUF = SpiABuffer[SpiABufferTxHead++];
-        }
+    m_SpiBCallback = callback;
+
+    __data16_write_addr((unsigned short) &DMA1SA,(unsigned long) data);
+    DMA1SZ = size;
+    if (!(DMA1CTL & DMAEN)) {
+        DMA1SZ = size;
+        DMA1CTL |= DMAEN;
     }
+
+    UCB0IFG &= ~UCTXIFG;
+    UCB0IFG |=  UCTXIFG;
 }
 
-#if defined(__TI_COMPILER_VERSION__) || defined(__IAR_SYSTEMS_ICC__)
-#pragma vector=USCI_B0_VECTOR
-__interrupt void SPI_B_ISR (void)
-#elif defined(__GNUC__)
-void __attribute__ ((interrupt(USCI_B0_VECTOR))) SPI_B_ISR (void)
-#else
-#error Compiler not supported!
-#endif
-{
-
-}
 #if defined(__TI_COMPILER_VERSION__) || defined(__IAR_SYSTEMS_ICC__)
 #pragma vector=DMA_VECTOR
 __interrupt void DmaIsr (void)
@@ -116,6 +110,10 @@ void __attribute__ ((interrupt(DMA_VECTOR))) DmaIsr (void)
         return;
     }
     if (DMAIV & DMAIV_DMA1IFG) {
+        if (m_SpiBCallback)
+        {
+            (m_SpiBCallback)();
+        }
         return;
     }
     if (DMAIV & DMAIV_DMA2IFG) {

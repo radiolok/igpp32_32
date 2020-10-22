@@ -23,6 +23,7 @@ SOFTWARE.*/
 #ifndef IGPP_H_
 #define IGPP_H_
 
+#include <string.h>
 #include "define.h"
 
 #include "Spi.h"
@@ -37,21 +38,12 @@ inline void igppCathodeClear()
     P1OUT  |= BIT4;
 }
 
-inline void igppCathodeTick()
+inline void igppCathodeLatch()
 {
-    P4OUT  |= BIT3;
-    P4OUT  &= ~BIT3;
+    P1OUT  |= BIT3;
+    P1OUT  &= ~BIT3;
 }
 
-inline void igppCathodeDataHigh()
-{
-    P4OUT  |= BIT1;
-}
-
-inline void igppCathodeDataLow()
-{
-    P4OUT  &= ~BIT1;
-}
 
 void igppLatch();
 
@@ -69,5 +61,9 @@ void igppSendAnode(uint8_t column);
 void igppSendCathode(uint8_t column);
 
 void igppAnodeWait(uint16_t us, void (*callback)());
+
+uint8_t* igppLoadBufferPtr();
+
+void igppChangeBuffer();
 
 #endif /* IGPP_H_ */

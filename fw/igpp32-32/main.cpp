@@ -20,30 +20,34 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.*/
 
-#include "define.h"
-#include "driverlib/MSP430F5xx_6xx/wdt_a.h"
-#include "driverlib/MSP430F5xx_6xx/ucs.h"
-#include "driverlib/MSP430F5xx_6xx/pmm.h"
 
+#include <string.h>
+
+#include "define.h"
 #include "driverlib.h"
 
 #include "USB_config/descriptors.h"
 #include "USB_API/USB_Common/device.h"
 #include "USB_API/USB_Common/usb.h"                 // USB-specific functions
-#include "USB_API/USB_CDC_API/UsbCdc.h"
+#include "USB_API/USB_HID_API/UsbHid.h"
 #include "USB_app/usbConstructs.h"
 
 #include "Igpp.h"
 
 // Global flags set by events
-volatile uint8_t bCDCDataReceived_event = FALSE;  // Flag set by event handler to
-                                               // indicate data has been
-                                               // received into USB buffer
+volatile uint8_t bHIDDataReceived_event = FALSE;
+volatile uint8_t bDataReceiveCompleted_event = FALSE;
 
-#define BUFFER_SIZE 256
-char dataBuffer[BUFFER_SIZE] = "";
-char nl[2] = "\n";
-uint16_t count;
+// Application globals
+volatile uint16_t usbEvents = USB_VBUSON_EVENTMASK + USB_VBUSOFF_EVENTMASK +
+    USB_DATARECEIVED_EVENTMASK + USB_USBSUSPEND_EVENTMASK +
+    USB_USBRESUME_EVENTMASK +
+    USB_USBRESET_EVENTMASK;
+
+char outString[40] = "";
+uint16_t i;
+uint16_t x,y;
+uint8_t ret;
 
 int main(void)
 {
@@ -93,76 +97,104 @@ int main(void)
 
     __enable_interrupt();  // Enable interrupts globally
 
-        while (1)
-        {
-            uint8_t ReceiveError = 0;
-            uint8_t SendError = 0;
-            uint16_t count;
+    while (1)
+       {
+           // Check the USB state and directly main loop accordingly
+           switch (USB_getConnectionState())
+           {
+               // This case is executed while your device is enumerated on the
+               // USB host
+               case ST_ENUM_ACTIVE:
+                   // Enter LPM0 until an event occurs.
+                   __bis_SR_register(LPM0_bits + GIE);
 
-            // Check the USB state and directly main loop accordingly
-            switch (USB_getConnectionState())
-            {
-                // This case is executed while your device is enumerated on the
-                // USB host
-                case ST_ENUM_ACTIVE:
+                   // This flag is set by the handleDataReceived event; this
+                   // event is only enabled when waiting for 'press any key'
+                   if (bHIDDataReceived_event){
+                       bHIDDataReceived_event = FALSE;
 
-                    // Sleep if there are no bytes to process.
-                    __disable_interrupt();
-                    if (!USBCDC_getBytesInUSBBuffer(CDC0_INTFNUM)) {
+                       // Change the event flags, in preparation for receiving 1K
+                       // data. No more data-received.  We only used this for
+                       // 'press any key'
+                       usbEvents &= ~USB_DATARECEIVED_EVENTMASK;
 
-                        // Enter LPM0 until awakened by an event handler
-                        __bis_SR_register(LPM0_bits + GIE);
-                    }
+                       // But enable receive-completed; we want to be prompted when
+                       // 1K data has been received
+                       usbEvents |= USB_RECEIVECOMPLETED_EVENTMASK;
 
-                    __enable_interrupt();
+                       USB_setEnabledEvents(usbEvents);
+                       // We don't care what char the key-press was so we reject it
+                       USBHID_rejectData(HID0_INTFNUM);
 
-                    // Exit LPM because of a data-receive event, and
-                    // fetch the received data
-                    if (bCDCDataReceived_event){
+                       strcpy(outString,"I'm ready to receive 1K of data.\r\n");
 
-                        // Clear flag early -- just in case execution breaks
-                        // below because of an error
-                        bCDCDataReceived_event = FALSE;
+                       // Send it over USB. If it failed for some reason; abort and
+                       // leave the main loop
+                       if ( USBHID_sendDataAndWaitTillDone((uint8_t*)outString,
+                               strlen(outString),HID0_INTFNUM,0)){
+                           USBHID_abortSend(&x,HID0_INTFNUM);
+                           break;
+                       }
 
-                        count = USBCDC_receiveDataInBuffer((uint8_t*)dataBuffer,
-                            BUFFER_SIZE,
-                            CDC0_INTFNUM);
+                       uint8_t* currentBuffer = igppLoadBufferPtr();
+                       // If USBHID_receiveData fails because of surprise removal
+                       // or suspended by host abort and leave main loop
+                       if (USBHID_receiveData(currentBuffer,PANEL_DATA_SIZE, HID0_INTFNUM) ==
+                           USBHID_BUS_NOT_AVAILABLE){
+                           USBHID_abortReceive(&x,HID0_INTFNUM);
+                           break;
+                       }
+                   }
 
-                        // Count has the number of bytes received into dataBuffer
-                        // Echo back to the host.
-                        if (USBCDC_sendDataInBackground((uint8_t*)dataBuffer,
-                                count, CDC0_INTFNUM, 1)){
-                            // Exit if something went wrong.
-                            SendError = 0x01;
-                            break;
-                        }
-                    }
-                    break;
+                   // This flag would have been set by the handleReceiveCompleted
+                   // event; this event is only enabled while receiving 1K data,
+                   // and signals that all 1K has been received
+                   if (bDataReceiveCompleted_event){
+                       bDataReceiveCompleted_event = FALSE;
+                       // Prepare the outgoing string
+                       igppChangeBuffer();
+                       strcpy(outString,"Thanks for the data.\r\n");
+                       // Send the response over USB.  If it failed for some reason
+                       // abort and leave the main loop
+                       if (USBHID_sendDataInBackground((uint8_t*)outString,
+                               strlen(outString),HID0_INTFNUM,0)){
+                           USBHID_abortSend(&x,HID0_INTFNUM);
+                           break;
+                       }
 
-                // These cases are executed while your device is disconnected from
-                // the host (meaning, not enumerated); enumerated but suspended
-                // by the host, or connected to a powered hub without a USB host
-                // present.
-                case ST_PHYS_DISCONNECTED:
-                case ST_ENUM_SUSPENDED:
-                case ST_PHYS_CONNECTED_NOENUM_SUSP:
-                    __bis_SR_register(LPM3_bits + GIE);
-                    _NOP();
-                    break;
+                       // Change the event flags, in preparation for 'press any key'
+                       // No more receive-completed.
+                       usbEvents &= ~USB_RECEIVECOMPLETED_EVENTMASK;
 
-                // The default is executed for the momentary state
-                // ST_ENUM_IN_PROGRESS.  Usually, this state only last a few
-                // seconds.  Be sure not to enter LPM3 in this state; USB
-                // communication is taking place here, and therefore the mode must
-                // be LPM0 or active-CPU.
-                case ST_ENUM_IN_PROGRESS:
-                default:;
-            }
+                       // This will tell us that data -- any key -- has arrived
+                       usbEvents |= USB_DATARECEIVED_EVENTMASK;
+                       USB_setEnabledEvents(usbEvents);
+                   }
 
-            if (ReceiveError || SendError){
-                // TO DO: User can place code here to handle error
-            }
-        }  //while(1)
+                   break;
+
+
+               // These cases are executed while your device is disconnected from
+               // the host (meaning, not enumerated); enumerated but suspended
+               // by the host, or connected to a powered hub without a USB host
+               // present.
+               case ST_PHYS_DISCONNECTED:
+               case ST_ENUM_SUSPENDED:
+               case ST_PHYS_CONNECTED_NOENUM_SUSP:
+                   __bis_SR_register(LPM3_bits + GIE);
+                   _NOP();
+                   break;
+
+               // The default is executed for the momentary state
+               // ST_ENUM_IN_PROGRESS.  Usually, this state only last a few
+               // seconds.  Be sure not to enter LPM3 in this state; USB
+               // communication is taking place here, and therefore the mode must
+               // be LPM0 or active-CPU.
+               case ST_ENUM_IN_PROGRESS:
+               default:;
+           }
+
+       }  //while(1)
 }
 
 /*
@@ -199,7 +231,7 @@ void __attribute__ ((interrupt(UNMI_VECTOR))) UNMI_ISR (void)
             // USB is automatically disconnecting in your software, set a
             // breakpoint here and see if execution hits it.  See the
             // Programmer's Guide for more information.
-            SYSBERRIV = 0; // clear bus error flag
-            USB_disable(); // Disable
+            SYSBERRIV = 0; //clear bus error flag
+            USB_disable(); //Disable
     }
 }

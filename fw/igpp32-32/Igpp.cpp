@@ -23,11 +23,16 @@ SOFTWARE.*/
 #include <Igpp.h>
 
 //Double buffering mechanism
-volatile uint8_t frameBuffer[2][(DISPLAY_HEIGTH >> 3) * DISPLAY_WIDTH] = {{0x00}, {0x00}};
+volatile uint8_t frameBuffer[2][PANEL_DATA_SIZE] = {{0x00}, {0x00}};
 
+volatile uint8_t cathodeSelector[CATHODE_BYTES] = {0x00};
+
+//Current Frame is currently displayed.
 volatile uint8_t currentFrame = 0;//or 1
 
 volatile uint8_t cathodePos = 0;
+
+volatile uint16_t rotation = 0;
 
 /*
 anode_latch P1.0
@@ -64,11 +69,31 @@ void igppInit()
 
     TB0R = 0x00;
     TB0CCTL0 |= CCIE; //CCR0 interrupt
-    TB0CTL |= TBSSEL_2;        //SMCLK, 6MHz. Inerrupt Enabled , flag enabled
+    TB0CTL |= TBSSEL_2; //SMCLK, 26MHz. Inerrupt Enabled , flag enabled
 
     P1OUT |= BIT1 | BIT4; //MR is up
 
     igppTick();
+
+    for (uint16_t x = 0; x < DISPLAY_WIDTH; ++x)
+    {
+        for (uint16_t y = 0; y < ANODE_BYTES; ++y)
+        {
+            frameBuffer[0][y + (ANODE_BYTES * x)] = x % 2 ? 0xAA : 0x55;
+            frameBuffer[1][y + (ANODE_BYTES * x)] = x % 2 ? 0x55 : 0xAA;
+        }
+    }
+}
+
+uint8_t* igppLoadBufferPtr()
+{
+    uint8_t loadedFrame = (currentFrame + 1) & 0x01;
+    return (uint8_t*)(frameBuffer[loadedFrame]);
+}
+
+void igppChangeBuffer()
+{
+    currentFrame = (currentFrame + 1) & 0x01;
 }
 
 void igppAnodeClear()
@@ -78,60 +103,50 @@ void igppAnodeClear()
     igppTick();
 }
 
+void cathodeTick()
+{
+    while (UCB0STAT & UCBUSY)
+    {
+        ;
+    }
+    igppCathodeLatch();
+    if (++cathodePos >= DISPLAY_WIDTH)
+    {
+        cathodePos = 0;
+    }
+    uint8_t byteNum = (cathodePos >> 3);
+    uint8_t bitPos = cathodePos & 0x07;
+    memset((uint8_t*)(&cathodeSelector), 0, CATHODE_BYTES);
+    cathodeSelector[byteNum] = (1 << bitPos);
+}
+
 void igppLatch()
 {
     while (UCA0STAT & UCBUSY)
     {
         ;
     }
-    if (cathodePos == 0)
-    {
-        igppCathodeClear();
-        igppCathodeDataHigh();
-        igppCathodeTick();
-        igppCathodeDataLow();
-    }
-    else
-    {
-        igppCathodeTick();
-    }
-    if (++cathodePos >= DISPLAY_WIDTH)
-    {
-        cathodePos = 0;
-    }
-    P1OUT  |= BIT0 | BIT3;
-    P1OUT  &= ~( BIT0 | BIT3);
-    igppAnodeWait(20, igppAnodeClear);
+    //anodesLatch
+    P1OUT  |= BIT0;
+    P1OUT  &= ~( BIT0);
+    igppAnodeWait(40, igppAnodeClear);
 }
 
 void igppTick()
 {
     uint8_t* AnodesDataPtr = (uint8_t*)(frameBuffer[currentFrame] + (ANODE_BYTES * cathodePos));
+    igppCathodeClear();
+    SpiBSend((uint8_t*)cathodeSelector, CATHODE_BYTES, cathodeTick);
     SpiASend(AnodesDataPtr, ANODE_BYTES, igppLatch);
 }
 
-void igppSend(uint8_t column)
-{
-
-}
-
-void igppSendAnode(uint8_t column)
-{
-
-}
-
-void igppSendCathode(uint8_t column)
-{
-
-}
 
 void (*m_callback)()  = NULL;
-
 
 inline void igppAnodeWait(uint16_t us, void (*callback)())
 {
 //Time setup   TimerTB0:
-    TB0CCR0 = us * 6 ; // 6MHz SMCL
+    TB0CCR0 = us * 23 ; // 6MHz SMCLK
     TB0R = 0;
     TB0CTL |= MC_1; // Count up to the TB0CCR0 value
     m_callback = callback;

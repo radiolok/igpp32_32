@@ -30,5 +30,6 @@ SOFTWARE.*/
 void SpiInit();
 
 void SpiASend(uint8_t* data, uint16_t size, void (*callback)());
+void SpiBSend(uint8_t* data, uint16_t size, void (*callback)());
 
 #endif /* SPI_H_ */

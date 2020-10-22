@@ -2,7 +2,7 @@
 <descTool>
     <toolOptions>
         <runGUI>1</runGUI>
-        <workspace>D:\radiolok@oc.urlnn.ru\Projects\20200303-IGPP32_32\fw</workspace>
+        <workspace>D:\radiolok@oc.urlnn.ru\Projects\20200303-IGPP32_32</workspace>
         <projectName>n/a</projectName>
     </toolOptions>
     <toolConfig>
@@ -33,7 +33,12 @@
                             <configStr>MSP USB</configStr>
                         </configParam>
                         <interfaces>
-                            <cdcInterface intString="ГИП10000 на стероидах"/>
+                            <hidInterface intString="ГИП10000 на стероидах">
+                                <hidParams>
+                                    <pollIntv>1</pollIntv>
+                                    <hidRepType>0</hidRepType>
+                                </hidParams>
+                            </hidInterface>
                         </interfaces>
                     </config>
                 </USBDevice>
