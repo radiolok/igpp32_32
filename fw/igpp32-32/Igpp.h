@@ -28,6 +28,19 @@ SOFTWARE.*/
 
 #include "Spi.h"
 
+enum igppFlagTypes
+{
+  igppFlagNone = 0,
+  igppFlagStartTick = (1 << 0),
+  igppFlagCathodeEnd = (1 << 1),
+  igppFlagAnodeEnd = (1 << 2),
+  igppFlagTimeout = (1 << 3)
+};
+
+void dmaAnodesHandler();
+void dmaCathodesHandler();
+void igppAnodeTimeoutHandler();
+
 void igppInit();
 
 void igppAnodeClear();
@@ -44,11 +57,11 @@ inline void igppCathodeLatch()
     P1OUT  &= ~BIT3;
 }
 
-
-void igppLatch();
-
-inline void igppCathodeOn() {P1OUT |= BIT5;}
-inline void igppCathodeOff() {P1OUT &= ~BIT5;}
+inline void igppAnodeLatch()
+{
+    P1OUT  |= BIT0;
+    P1OUT  &= ~( BIT0);
+}
 
 void igppTick();
 
@@ -61,6 +74,9 @@ void igppSendAnode(uint8_t column);
 void igppSendCathode(uint8_t column);
 
 void igppAnodeWait(uint16_t us, void (*callback)());
+
+void igppStartFrame();
+void cathodeTick();
 
 uint8_t* igppLoadBufferPtr();
 

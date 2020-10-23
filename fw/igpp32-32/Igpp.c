@@ -48,6 +48,33 @@ cathode srclk P4.3
 cathode DI P4.1
 */
 
+volatile uint8_t igppFlags = 0;
+
+void dmaAnodesHandler()
+{
+    while (UCA0STAT & UCBUSY)
+    {
+        ;
+    }
+    igppFlags |= igppFlagAnodeEnd;
+}
+
+void dmaCathodesHandler()
+{
+    while (UCB0STAT & UCBUSY)
+    {
+        ;
+    }
+    igppFlags |= igppFlagCathodeEnd;
+}
+
+void igppAnodeTimeoutHandler()
+{
+    P1OUT  &= ~BIT1;
+    P1OUT  |= BIT1;
+    igppFlags |= igppFlagTimeout;
+}
+
 void igppInit()
 {
     P1DIR |= BIT0 | BIT1 | BIT2 | BIT3 | BIT4 | BIT5;
@@ -56,7 +83,7 @@ void igppInit()
     P4DIR |= BIT1 | BIT3;
     P4OUT &= ~(BIT1 | BIT3);
 
-    SpiInit();
+    SpiInit((uint8_t*)cathodeSelector, dmaAnodesHandler, dmaCathodesHandler);
 
     //Scan TA0: 40kHz
 
@@ -73,8 +100,6 @@ void igppInit()
 
     P1OUT |= BIT1 | BIT4; //MR is up
 
-    igppTick();
-
     for (uint16_t x = 0; x < DISPLAY_WIDTH; ++x)
     {
         for (uint16_t y = 0; y < ANODE_BYTES; ++y)
@@ -82,6 +107,27 @@ void igppInit()
             frameBuffer[0][y + (ANODE_BYTES * x)] = x % 2 ? 0xAA : 0x55;
             frameBuffer[1][y + (ANODE_BYTES * x)] = x % 2 ? 0x55 : 0xAA;
         }
+    }
+}
+
+void igppTick()
+{
+    if (igppFlags & igppFlagStartTick)
+    {
+        igppFlags &= ~igppFlagStartTick;
+        igppStartFrame();
+    }
+    if (igppFlags & igppFlagAnodeEnd)
+    {
+        igppFlags &= ~igppFlagAnodeEnd;
+        igppAnodeLatch();
+        igppAnodeWait(40, igppAnodeTimeoutHandler);
+    }
+    if (igppFlags & igppFlagCathodeEnd)
+    {
+        igppFlags &= ~igppFlagCathodeEnd;
+        igppCathodeLatch();
+        cathodeTick();
     }
 }
 
@@ -96,48 +142,24 @@ void igppChangeBuffer()
     currentFrame = (currentFrame + 1) & 0x01;
 }
 
-void igppAnodeClear()
-{
-    P1OUT  &= ~BIT1;
-    P1OUT  |= BIT1;
-    igppTick();
-}
-
 void cathodeTick()
 {
-    while (UCB0STAT & UCBUSY)
-    {
-        ;
-    }
-    igppCathodeLatch();
     if (++cathodePos >= DISPLAY_WIDTH)
     {
         cathodePos = 0;
     }
     uint8_t byteNum = (cathodePos >> 3);
     uint8_t bitPos = cathodePos & 0x07;
-    memset((uint8_t*)(&cathodeSelector), 0, CATHODE_BYTES);
     cathodeSelector[byteNum] = (1 << bitPos);
 }
 
-void igppLatch()
-{
-    while (UCA0STAT & UCBUSY)
-    {
-        ;
-    }
-    //anodesLatch
-    P1OUT  |= BIT0;
-    P1OUT  &= ~( BIT0);
-    igppAnodeWait(40, igppAnodeClear);
-}
-
-void igppTick()
+void igppStartFrame()
 {
     uint8_t* AnodesDataPtr = (uint8_t*)(frameBuffer[currentFrame] + (ANODE_BYTES * cathodePos));
     igppCathodeClear();
-    SpiBSend((uint8_t*)cathodeSelector, CATHODE_BYTES, cathodeTick);
-    SpiASend(AnodesDataPtr, ANODE_BYTES, igppLatch);
+    memset((uint8_t*)(&cathodeSelector), 0, CATHODE_BYTES);
+    SpiBSend(CATHODE_BYTES);
+    SpiASend(AnodesDataPtr, ANODE_BYTES);
 }
 
 
@@ -152,6 +174,7 @@ inline void igppAnodeWait(uint16_t us, void (*callback)())
     m_callback = callback;
 }
 
+
 //This timer does 50kHz f_scan
 // Timer B0 interrupt service routine
 #if defined(__TI_COMPILER_VERSION__) || defined(__IAR_SYSTEMS_ICC__)
@@ -163,8 +186,14 @@ void __attribute__ ((interrupt(TIMER0_A0_VECTOR))) TIMERA0_ISR (void)
 #error Compiler not supported!
 #endif
 {
-    //igppTick();
+    if (igppFlags & igppFlagTimeout)
+    {
+        igppFlags &= ~igppFlagTimeout;
+        igppFlags |= igppFlagStartTick;
+    }
+    __bic_SR_register_on_exit(LPM3_bits);   // Exit LPM0-3
 }
+
 
 // Timer B0 interrupt service routine
 #if defined(__TI_COMPILER_VERSION__) || defined(__IAR_SYSTEMS_ICC__)
@@ -179,5 +208,5 @@ void __attribute__ ((interrupt(TIMER0_B0_VECTOR))) TIMERB0_ISR (void)
     TB0CTL &= ~MC_1;
     if (m_callback)
         (m_callback)();
-
+    __bic_SR_register_on_exit(LPM3_bits);   // Exit LPM0-3
 }

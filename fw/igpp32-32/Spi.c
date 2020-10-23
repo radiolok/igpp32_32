@@ -22,9 +22,17 @@ SOFTWARE.*/
 
 #include <Spi.h>
 
+void callbackEmpty()
+{
 
+}
 
-void SpiInit()
+/**Anodes Spi*/
+void (*m_SpiACallback)()  = callbackEmpty;
+/**Cathodes Spi*/
+void (*m_SpiBCallback)()  = callbackEmpty;
+
+void SpiInit(uint8_t* SpiBdata, void (*spiACallback)(), void (*spiBCallback)())
 {
     P4SEL |= BIT0 | BIT1 | BIT3 | BIT4;
 
@@ -53,42 +61,34 @@ void SpiInit()
     DMA0CTL = DMASRCINCR_3 + DMADSTBYTE + DMASRCBYTE + DMAIE + DMAIFG;
     __data16_write_addr((unsigned short) &DMA0DA,(unsigned long) &UCA0TXBUF);
 
-    DMACTL0 |= DMA0TSEL_19;  // UCB0TXIFG as trigger
-    DMA1CTL = DMASRCINCR_3 + DMADSTBYTE + DMASRCBYTE + DMAIE + DMAIFG;
+      DMACTL0 |= DMA1TSEL_19;  // UCB0TXIFG as trigger
+      DMA1CTL = DMASRCINCR_3 + DMADSTBYTE + DMASRCBYTE + DMAIE + DMAIFG;
     __data16_write_addr((unsigned short) &DMA1DA,(unsigned long) &UCB0TXBUF);
+
+    m_SpiACallback = spiACallback;
+    m_SpiBCallback = spiBCallback;
 }
 
-/**Anodes Spi*/
-void (*m_SpiACallback)()  = NULL;
-void SpiASend(uint8_t* data, uint16_t size, void (*callback)())
-{
-    m_SpiACallback = callback;
 
+void SpiASend(uint8_t* data, uint16_t size)
+{
     __data16_write_addr((unsigned short) &DMA0SA,(unsigned long) data);
     DMA0SZ = size;
     if (!(DMA0CTL & DMAEN)) {
-        DMA0SZ = size;
         DMA0CTL |= DMAEN;
     }
-
     UCA0IFG &= ~UCTXIFG;
     UCA0IFG |=  UCTXIFG;
 }
 
 
-/**Cathodes Spi*/
-void (*m_SpiBCallback)()  = NULL;
-void SpiBSend(uint8_t* data, uint16_t size, void (*callback)())
-{
-    m_SpiBCallback = callback;
 
-    __data16_write_addr((unsigned short) &DMA1SA,(unsigned long) data);
+void SpiBSend(uint16_t size)
+{
     DMA1SZ = size;
     if (!(DMA1CTL & DMAEN)) {
-        DMA1SZ = size;
         DMA1CTL |= DMAEN;
     }
-
     UCB0IFG &= ~UCTXIFG;
     UCB0IFG |=  UCTXIFG;
 }
@@ -102,21 +102,17 @@ void __attribute__ ((interrupt(DMA_VECTOR))) DmaIsr (void)
 #error Compiler not supported!
 #endif
 {
-    if (DMAIV & DMAIV_DMA0IFG) {
-        if (m_SpiACallback)
-        {
-            (m_SpiACallback)();
-        }
+    __bic_SR_register_on_exit(LPM3_bits);   // Exit LPM0-3
+    uint16_t dmaVector = DMAIV;
+    if (dmaVector & DMAIV_DMA0IFG) {
+        (m_SpiACallback)();
         return;
     }
-    if (DMAIV & DMAIV_DMA1IFG) {
-        if (m_SpiBCallback)
-        {
-            (m_SpiBCallback)();
-        }
+    if (dmaVector & DMAIV_DMA1IFG) {
+        (m_SpiBCallback)();
         return;
     }
-    if (DMAIV & DMAIV_DMA2IFG) {
+    if (dmaVector & DMAIV_DMA2IFG) {
         return;
     }
 }
