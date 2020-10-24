@@ -25,7 +25,14 @@ SOFTWARE.*/
 //Double buffering mechanism
 volatile uint8_t frameBuffer[2][PANEL_DATA_SIZE] = {{0x00}, {0x00}};
 
-volatile uint8_t cathodeSelector[CATHODE_BYTES] = {0x00};
+uint8_t anodesEmpty[ANODE_BYTES] = {0xFF, 0xFF, 0xFF, 0xFF
+#if PANEL_HEIGHT > 1
+                                    ,0xFF, 0xFF, 0xFF, 0xFF
+#endif
+#if PANEL_HEIGHT > 2
+                                    ,0xFF, 0xFF, 0xFF, 0xFF
+#endif
+};
 
 //Current Frame is currently displayed.
 volatile uint8_t currentFrame = 0;//or 1
@@ -48,32 +55,19 @@ cathode srclk P4.3
 cathode DI P4.1
 */
 
-volatile uint8_t igppFlags = 0;
+volatile uint8_t igppFlags = igppFlagNone;
 
-void dmaAnodesHandler()
+uint8_t* igppLoadBufferPtr()
 {
-    while (UCA0STAT & UCBUSY)
-    {
-        ;
-    }
-    igppFlags |= igppFlagAnodeEnd;
+    uint8_t loadedFrame = (currentFrame + 1) & 0x01;
+    return (uint8_t*)(frameBuffer[loadedFrame]);
 }
 
-void dmaCathodesHandler()
+void igppChangeBuffer()
 {
-    while (UCB0STAT & UCBUSY)
-    {
-        ;
-    }
-    igppFlags |= igppFlagCathodeEnd;
+    currentFrame = (currentFrame + 1) & 0x01;
 }
 
-void igppAnodeTimeoutHandler()
-{
-    P1OUT  &= ~BIT1;
-    P1OUT  |= BIT1;
-    igppFlags |= igppFlagTimeout;
-}
 
 void igppInit()
 {
@@ -83,20 +77,14 @@ void igppInit()
     P4DIR |= BIT1 | BIT3;
     P4OUT &= ~(BIT1 | BIT3);
 
-    SpiInit((uint8_t*)cathodeSelector, dmaAnodesHandler, dmaCathodesHandler);
+    SpiInit(dmaAnodesHandler);
 
     //Scan TA0: 40kHz
 
     TA0R = 0x00;
     TA0CCTL0 |= CCIE; //CCR0 interrupt
-    TA0CCR0 = 150;// 7.5MHz/ 40kHz
-    TA0CTL |= TASSEL_2 | MC_1 | ID_2; //SMCLK 26MHz div 4 = 7.5MHz
-
-    //timeout TB):
-
-    TB0R = 0x00;
-    TB0CCTL0 |= CCIE; //CCR0 interrupt
-    TB0CTL |= TBSSEL_2; //SMCLK, 26MHz. Inerrupt Enabled , flag enabled
+    TA0CCR0 = 406;// 6.5MHz/ 16kHz
+    TA0CTL |= TASSEL_2 | MC_1 | ID_2; //SMCLK 26MHz div 4 = 6.5MHz
 
     P1OUT |= BIT1 | BIT4; //MR is up
 
@@ -110,73 +98,56 @@ void igppInit()
     }
 }
 
-void igppTick()
+inline void igppNextCathode()
 {
-    if (igppFlags & igppFlagStartTick)
+    if (cathodePos == 0)
     {
-        igppFlags &= ~igppFlagStartTick;
-        igppStartFrame();
+        igppCathodeClear();
+        igppCathodeDataHigh();
+        igppCathodeTick();
+        igppCathodeDataLow();
     }
-    if (igppFlags & igppFlagAnodeEnd)
+    else
     {
-        igppFlags &= ~igppFlagAnodeEnd;
-        igppAnodeLatch();
-        igppAnodeWait(40, igppAnodeTimeoutHandler);
+        igppCathodeTick();
     }
-    if (igppFlags & igppFlagCathodeEnd)
-    {
-        igppFlags &= ~igppFlagCathodeEnd;
-        igppCathodeLatch();
-        cathodeTick();
-    }
-}
-
-uint8_t* igppLoadBufferPtr()
-{
-    uint8_t loadedFrame = (currentFrame + 1) & 0x01;
-    return (uint8_t*)(frameBuffer[loadedFrame]);
-}
-
-void igppChangeBuffer()
-{
-    currentFrame = (currentFrame + 1) & 0x01;
-}
-
-void cathodeTick()
-{
     if (++cathodePos >= DISPLAY_WIDTH)
     {
         cathodePos = 0;
     }
-    uint8_t byteNum = (cathodePos >> 3);
-    uint8_t bitPos = cathodePos & 0x07;
-    cathodeSelector[byteNum] = (1 << bitPos);
 }
 
-void igppStartFrame()
+void dmaAnodesHandler()
 {
-    uint8_t* AnodesDataPtr = (uint8_t*)(frameBuffer[currentFrame] + (ANODE_BYTES * cathodePos));
-    igppCathodeClear();
-    memset((uint8_t*)(&cathodeSelector), 0, CATHODE_BYTES);
-    SpiBSend(CATHODE_BYTES);
-    SpiASend(AnodesDataPtr, ANODE_BYTES);
+    while (UCA0STAT & UCBUSY)
+    {
+        ;
+    }
+    if (igppFlags == igppAnodesErase)
+    {
+        igppFlags = igppFlagNone;
+        igppNextCathode();
+        igppLatchAll();
+        //Select next cathode and anode data:
+        uint8_t* AnodesDataPtr = (uint8_t*)(frameBuffer[currentFrame] + (ANODE_BYTES * cathodePos));
+        //Send data to SPI channel
+        SpiASend(AnodesDataPtr, ANODE_BYTES);
+    }
+    else
+    {
+        igppLatchAll();
+    }
 }
 
-
-void (*m_callback)()  = NULL;
-
-inline void igppAnodeWait(uint16_t us, void (*callback)())
+void igppNextFrame()
 {
-//Time setup   TimerTB0:
-    TB0CCR0 = us * 23 ; // 6MHz SMCLK
-    TB0R = 0;
-    TB0CTL |= MC_1; // Count up to the TB0CCR0 value
-    m_callback = callback;
+    //Clear Anodes and cathodes:
+    igppAnodeClear();
+    SpiASend(anodesEmpty, ANODE_BYTES);
+    igppFlags = igppAnodesErase;
 }
 
-
-//This timer does 50kHz f_scan
-// Timer B0 interrupt service routine
+//This timer does 16kHz f_scan
 #if defined(__TI_COMPILER_VERSION__) || defined(__IAR_SYSTEMS_ICC__)
 #pragma vector=TIMER0_A0_VECTOR
 __interrupt void TIMERA0_ISR (void)
@@ -186,27 +157,5 @@ void __attribute__ ((interrupt(TIMER0_A0_VECTOR))) TIMERA0_ISR (void)
 #error Compiler not supported!
 #endif
 {
-    if (igppFlags & igppFlagTimeout)
-    {
-        igppFlags &= ~igppFlagTimeout;
-        igppFlags |= igppFlagStartTick;
-    }
-    __bic_SR_register_on_exit(LPM3_bits);   // Exit LPM0-3
-}
-
-
-// Timer B0 interrupt service routine
-#if defined(__TI_COMPILER_VERSION__) || defined(__IAR_SYSTEMS_ICC__)
-#pragma vector=TIMER0_B0_VECTOR
-__interrupt void TIMERB0_ISR (void)
-#elif defined(__GNUC__)
-void __attribute__ ((interrupt(TIMER0_B0_VECTOR))) TIMERB0_ISR (void)
-#else
-#error Compiler not supported!
-#endif
-{
-    TB0CTL &= ~MC_1;
-    if (m_callback)
-        (m_callback)();
-    __bic_SR_register_on_exit(LPM3_bits);   // Exit LPM0-3
+    igppNextFrame();
 }

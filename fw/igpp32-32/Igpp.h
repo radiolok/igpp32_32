@@ -31,10 +31,7 @@ SOFTWARE.*/
 enum igppFlagTypes
 {
   igppFlagNone = 0,
-  igppFlagStartTick = (1 << 0),
-  igppFlagCathodeEnd = (1 << 1),
-  igppFlagAnodeEnd = (1 << 2),
-  igppFlagTimeout = (1 << 3)
+  igppAnodesErase = 1
 };
 
 void dmaAnodesHandler();
@@ -44,6 +41,28 @@ void igppAnodeTimeoutHandler();
 void igppInit();
 
 void igppAnodeClear();
+
+inline void igppCathodeTick()
+{
+    P4OUT  |= BIT3;
+    P4OUT  &= ~BIT3;
+}
+
+inline void igppCathodeDataHigh()
+{
+    P4OUT  |= BIT1;
+}
+
+inline void igppCathodeDataLow()
+{
+    P4OUT  &= ~BIT1;
+}
+
+inline void igppLatchAll()
+{
+    P1OUT  |= BIT0 | BIT3;
+    P1OUT  &= ~( BIT0 | BIT3);
+}
 
 inline void igppCathodeClear()
 {
@@ -63,20 +82,19 @@ inline void igppAnodeLatch()
     P1OUT  &= ~( BIT0);
 }
 
-void igppTick();
+inline void igppAnodeClear()
+{
+    P1OUT  &= ~(BIT1);
+    P1OUT  |= (BIT1);
+}
 
-void igppAnodeWait(uint16_t us, void (*callback)());
+inline void igppClearAll()
+{
+    P1OUT  &= ~(BIT1 | BIT4);
+    P1OUT  |= (BIT1 | BIT4);
+}
 
-void igppSend(uint8_t column);
-
-void igppSendAnode(uint8_t column);
-
-void igppSendCathode(uint8_t column);
-
-void igppAnodeWait(uint16_t us, void (*callback)());
-
-void igppStartFrame();
-void cathodeTick();
+void igppNextFrame();
 
 uint8_t* igppLoadBufferPtr();
 

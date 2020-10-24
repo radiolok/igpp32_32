@@ -70,9 +70,6 @@ int main(void)
   // MSP430 USB requires a Vcore setting of at least 2.
   PMM_setVCore(PMM_CORE_LEVEL_3);
 
-      P2DIR |= BIT2;                            // SMCLK set out to pins
-      P2SEL |= BIT2;
-
     UCSCTL3 = SELREF_2;                       // Set DCO FLL reference = REFO
     UCSCTL4 |= SELA_2;                        // Set ACLK = REFO
 
@@ -99,7 +96,6 @@ int main(void)
     while (1)
        {
         __bis_SR_register(LPM3_bits + GIE);
-        igppTick();
        }
 }
 

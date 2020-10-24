@@ -29,21 +29,15 @@ void callbackEmpty()
 
 /**Anodes Spi*/
 void (*m_SpiACallback)()  = callbackEmpty;
-/**Cathodes Spi*/
-void (*m_SpiBCallback)()  = callbackEmpty;
 
-void SpiInit(uint8_t* SpiBdata, void (*spiACallback)(), void (*spiBCallback)())
+void SpiInit( void (*spiACallback)())
 {
-    P4SEL |= BIT0 | BIT1 | BIT3 | BIT4;
+    P4SEL |= BIT0 | /*BIT1 | BIT3 |*/ BIT4;
 
     PMAPKEYID = 0x2D52;
 
     P4MAP0 = PM_UCA0CLK;
-    P4MAP1 = PM_UCB0SIMO;
 
-    PMAPKEYID = 0x2D52;
-
-    P4MAP3 = PM_UCB0CLK;
     P4MAP4 = PM_UCA0SIMO;
 
     UCA0CTL0 = UCMST | UCSYNC;//MSB, syncronous
@@ -51,22 +45,12 @@ void SpiInit(uint8_t* SpiBdata, void (*spiACallback)(), void (*spiBCallback)())
 
     UCA0BR0 = 4;// 26MHz/4 = 7.5MHz
 
-    UCB0CTL0 = UCMST | UCSYNC;//MSB, syncronous
-    UCB0CTL1 = UCSSEL_2; //SMCLK
-
-    UCB0BR0 = 4;// 26MHz/4 = 7.5MHz
-
     //UCA0IE = UCTXIE; //enable interrupt
     DMACTL0 |= DMA0TSEL_17;  // UCA0TXIFG as trigger
     DMA0CTL = DMASRCINCR_3 + DMADSTBYTE + DMASRCBYTE + DMAIE + DMAIFG;
     __data16_write_addr((unsigned short) &DMA0DA,(unsigned long) &UCA0TXBUF);
 
-      DMACTL0 |= DMA1TSEL_19;  // UCB0TXIFG as trigger
-      DMA1CTL = DMASRCINCR_3 + DMADSTBYTE + DMASRCBYTE + DMAIE + DMAIFG;
-    __data16_write_addr((unsigned short) &DMA1DA,(unsigned long) &UCB0TXBUF);
-
     m_SpiACallback = spiACallback;
-    m_SpiBCallback = spiBCallback;
 }
 
 
@@ -83,16 +67,6 @@ void SpiASend(uint8_t* data, uint16_t size)
 
 
 
-void SpiBSend(uint16_t size)
-{
-    DMA1SZ = size;
-    if (!(DMA1CTL & DMAEN)) {
-        DMA1CTL |= DMAEN;
-    }
-    UCB0IFG &= ~UCTXIFG;
-    UCB0IFG |=  UCTXIFG;
-}
-
 #if defined(__TI_COMPILER_VERSION__) || defined(__IAR_SYSTEMS_ICC__)
 #pragma vector=DMA_VECTOR
 __interrupt void DmaIsr (void)
@@ -102,14 +76,12 @@ void __attribute__ ((interrupt(DMA_VECTOR))) DmaIsr (void)
 #error Compiler not supported!
 #endif
 {
-    __bic_SR_register_on_exit(LPM3_bits);   // Exit LPM0-3
     uint16_t dmaVector = DMAIV;
     if (dmaVector & DMAIV_DMA0IFG) {
         (m_SpiACallback)();
         return;
     }
     if (dmaVector & DMAIV_DMA1IFG) {
-        (m_SpiBCallback)();
         return;
     }
     if (dmaVector & DMAIV_DMA2IFG) {

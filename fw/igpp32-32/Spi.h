@@ -27,8 +27,7 @@ SOFTWARE.*/
 #include <define.h>
 
 
-void SpiInit(uint8_t* SpiBdata, void (*spiACallback)(), void (*spiBCallback)());
+void SpiInit(void (*spiACallback)());
 void SpiASend(uint8_t* data, uint16_t size);
-void SpiBSend(uint16_t size);
 
 #endif /* SPI_H_ */
