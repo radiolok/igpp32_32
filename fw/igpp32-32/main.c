@@ -95,8 +95,102 @@ int main(void)
 
     while (1)
        {
-        __bis_SR_register(LPM3_bits + GIE);
-       }
+           // Check the USB state and directly main loop accordingly
+           switch (USB_getConnectionState())
+           {
+               // This case is executed while your device is enumerated on the
+               // USB host
+               case ST_ENUM_ACTIVE:
+                   // Enter LPM0 until an event occurs.
+                   __bis_SR_register(LPM0_bits + GIE);
+
+                   // This flag is set by the handleDataReceived event; this
+                   // event is only enabled when waiting for 'press any key'
+                   if (bHIDDataReceived_event){
+                       bHIDDataReceived_event = FALSE;
+
+                       // Change the event flags, in preparation for receiving 1K
+                       // data. No more data-received.  We only used this for
+                       // 'press any key'
+                       usbEvents &= ~USB_DATARECEIVED_EVENTMASK;
+
+                       // But enable receive-completed; we want to be prompted when
+                       // 1K data has been received
+                       usbEvents |= USB_RECEIVECOMPLETED_EVENTMASK;
+
+                       USB_setEnabledEvents(usbEvents);
+                       // We don't care what char the key-press was so we reject it
+                       USBHID_rejectData(HID0_INTFNUM);
+
+                       strcpy(outString,"I'm ready to receive 1K of data.\r\n");
+
+                       // Send it over USB. If it failed for some reason; abort and
+                       // leave the main loop
+                       if ( USBHID_sendDataAndWaitTillDone((uint8_t*)outString,
+                               strlen(outString),HID0_INTFNUM,0)){
+                           USBHID_abortSend(&x,HID0_INTFNUM);
+                           break;
+                       }
+
+                       uint8_t* currentBuffer = igppLoadBufferPtr();
+                       // If USBHID_receiveData fails because of surprise removal
+                       // or suspended by host abort and leave main loop
+                       if (USBHID_receiveData(currentBuffer,PANEL_DATA_SIZE, HID0_INTFNUM) ==
+                           USBHID_BUS_NOT_AVAILABLE){
+                           USBHID_abortReceive(&x,HID0_INTFNUM);
+                           break;
+                       }
+                   }
+
+                   // This flag would have been set by the handleReceiveCompleted
+                   // event; this event is only enabled while receiving 1K data,
+                   // and signals that all 1K has been received
+                   if (bDataReceiveCompleted_event){
+                       bDataReceiveCompleted_event = FALSE;
+                       // Prepare the outgoing string
+                       igppChangeBuffer();
+                       strcpy(outString,"Thanks for the data.\r\n");
+                       // Send the response over USB.  If it failed for some reason
+                       // abort and leave the main loop
+                       if (USBHID_sendDataInBackground((uint8_t*)outString,
+                               strlen(outString),HID0_INTFNUM,0)){
+                           USBHID_abortSend(&x,HID0_INTFNUM);
+                           break;
+                       }
+
+                       // Change the event flags, in preparation for 'press any key'
+                       // No more receive-completed.
+                       usbEvents &= ~USB_RECEIVECOMPLETED_EVENTMASK;
+
+                       // This will tell us that data -- any key -- has arrived
+                       usbEvents |= USB_DATARECEIVED_EVENTMASK;
+                       USB_setEnabledEvents(usbEvents);
+                   }
+
+                   break;
+
+
+               // These cases are executed while your device is disconnected from
+               // the host (meaning, not enumerated); enumerated but suspended
+               // by the host, or connected to a powered hub without a USB host
+               // present.
+               case ST_PHYS_DISCONNECTED:
+               case ST_ENUM_SUSPENDED:
+               case ST_PHYS_CONNECTED_NOENUM_SUSP:
+                   __bis_SR_register(LPM3_bits + GIE);
+                   _NOP();
+                   break;
+
+               // The default is executed for the momentary state
+               // ST_ENUM_IN_PROGRESS.  Usually, this state only last a few
+               // seconds.  Be sure not to enter LPM3 in this state; USB
+               // communication is taking place here, and therefore the mode must
+               // be LPM0 or active-CPU.
+               case ST_ENUM_IN_PROGRESS:
+               default:;
+           }
+
+       }  //while(1)
 }
 
 /*
