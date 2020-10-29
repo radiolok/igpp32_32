@@ -102,7 +102,7 @@ if __name__ == '__main__':
                 current_time = current_milli_time()
                 while current_time - previous_time < time_period:
                     pass
-                ser.write(open(join("raw_frames", input_file),"rb").read())
+                ser.write(open(join(args.dirout, outputFile),"rb").read())
         except serial.serialutil.SerialException:
             print('no COM port connection')
 
