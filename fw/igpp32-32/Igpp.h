@@ -26,17 +26,13 @@ SOFTWARE.*/
 #include <string.h>
 #include "define.h"
 
-#include "Spi.h"
-
 enum igppFlagTypes
 {
   igppFlagNone = 0,
   igppAnodesErase = 1
 };
 
-void dmaAnodesHandler();
-void dmaCathodesHandler();
-void igppAnodeTimeoutHandler();
+void spiInit();
 
 void igppInit();
 
@@ -60,6 +56,10 @@ inline void igppCathodeDataLow()
 
 inline void igppLatchAll()
 {
+    while (UCA0STAT & UCBUSY)
+    {
+        ;
+    }
     P1OUT  |= BIT0 | BIT3;
     P1OUT  &= ~( BIT0 | BIT3);
 }

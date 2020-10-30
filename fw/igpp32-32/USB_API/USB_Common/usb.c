@@ -344,7 +344,7 @@ char *USB_getVersion(void)
 uint8_t USB_init (void)
 {
     uint16_t bGIE  = __get_SR_register() & GIE;                                 //save interrupt status
-    USB_XT2Freq = USB_determineXT2Freq();
+    USB_XT2Freq = 26;
     USB_XT2PLL = USB_lookUpPll(USB_XT2Freq);
     uint16_t MCLKFreq = USB_determineFreq();
     uint16_t DelayConstant_250us = ((MCLKFreq >> 6) + (MCLKFreq >> 7) + (MCLKFreq >> 9));
