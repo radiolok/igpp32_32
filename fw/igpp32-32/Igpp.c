@@ -23,7 +23,7 @@ SOFTWARE.*/
 #include <Igpp.h>
 
 //Double buffering mechanism
-volatile uint8_t frameBuffer[2][1156] = {
+volatile uint8_t frameBuffer[2][PANEL_DATA_SIZE] = {
 {
  0x00, 0x00, 0x00, 0x00, 0x07, 0x84, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
  0x00, 0x00, 0x00, 0x00, 0x0F, 0xFE, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -233,6 +233,7 @@ uint8_t anodesEmpty[ANODE_BYTES] = {0xFF, 0xFF, 0xFF, 0xFF
 
 //Current Frame is currently displayed.
 volatile uint8_t currentFrame = 0;//or 1
+volatile uint8_t loadedFrame = 1;
 
 volatile uint8_t cathodePos = DISPLAY_WIDTH;
 
@@ -253,18 +254,32 @@ cathode DI P4.1
 */
 
 volatile uint8_t igppFlags = igppFlagNone;
+volatile uint8_t igppBufferFlag = igppFlagNone;
 
 uint8_t* igppLoadBufferPtr()
 {
-    uint8_t loadedFrame = (currentFrame + 1) & 0x01;
     return (uint8_t*)(frameBuffer[loadedFrame]);
+}
+
+uint8_t* igppCurrentBufferPtr()
+{
+    return (uint8_t*)(frameBuffer[currentFrame]);
+}
+
+inline uint8_t* igppLoadBufferData(uint8_t x, uint8_t y)
+{
+    return (uint8_t*)frameBuffer[loadedFrame] + (ANODE_BYTES * x + y);
+}
+
+inline uint8_t* igppCurrentBufferData(uint8_t x, uint8_t y)
+{
+    return (uint8_t*)frameBuffer[currentFrame] + (ANODE_BYTES * x + y);
 }
 
 void igppChangeBuffer()
 {
-    currentFrame = (currentFrame + 1) & 0x01;
+    igppBufferFlag = igppChangeBufferPending;
 }
-
 
 void SpiInit()
 {
@@ -276,7 +291,7 @@ void SpiInit()
 
     P4MAP4 = PM_UCA0SIMO;
 
-    UCA0CTL0 = UCMSB | UCMST | UCSYNC;//MSB, syncronous
+    UCA0CTL0 = UCCKPH | UCMSB | UCMST | UCSYNC;//MSB, syncronous
     UCA0CTL1 = UCSSEL_2; //SMCLK
 
     UCA0BR0 = 4;// 26MHz/4 = 7.5MHz
@@ -315,7 +330,6 @@ void igppInit()
     TA0CTL |= TASSEL_2 | MC_1 | ID_2; //SMCLK 26MHz div 4 = 6.5MHz
 
     P1OUT |= BIT1 | BIT4; //MR is up
-
 }
 
 inline void igppNextCathode()
@@ -323,13 +337,21 @@ inline void igppNextCathode()
     if (++cathodePos >= DISPLAY_WIDTH)
     {
        cathodePos = 0;
+       if (igppBufferFlag == igppChangeBufferPending)
+       {
+           igppBufferFlag = igppFlagNone;
+           loadedFrame = currentFrame;
+           currentFrame = (currentFrame + 1) & 0x01;
+       }
        //igppCathodeClear();
        P1OUT  &= ~BIT4;
        P1OUT  |= BIT4;
        //igppCathodeDataHigh();
        P4OUT  |= BIT1;
+       //__no_operation();
        //igppCathodeTick();
        P4OUT  |= BIT3;
+       //__no_operation();
        P4OUT  &= ~(BIT1 | BIT3);//++igppCathodeDataLow();
     }
     else

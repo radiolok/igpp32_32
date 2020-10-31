@@ -80,12 +80,6 @@ int main(void)
         while (1)
         {
             __bis_SR_register(LPM0_bits + GIE);
-            /*++rotation;
-            if (rotation > 100)
-            {
-                rotation = 0;
-                igppChangeBuffer();
-            }*/
            /*uint8_t ReceiveError = 0;
             uint8_t SendError = 0;
             uint16_t count;

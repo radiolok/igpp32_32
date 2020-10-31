@@ -29,7 +29,8 @@ SOFTWARE.*/
 enum igppFlagTypes
 {
   igppFlagNone = 0,
-  igppAnodesErase = 1
+  igppAnodesErase = 1,
+  igppChangeBufferPending = 2
 };
 
 void spiInit();
@@ -97,6 +98,7 @@ inline void igppClearAll()
 void igppNextFrame();
 
 uint8_t* igppLoadBufferPtr();
+uint8_t* igppCurrentBufferPtr();
 
 void igppChangeBuffer();
 
