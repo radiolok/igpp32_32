@@ -235,13 +235,22 @@ uint8_t anodesEmpty[ANODE_BYTES] = {0xFF, 0xFF, 0xFF, 0xFF
 #endif
 };
 
+uint8_t cathodesArray[CATHODE_BYTES] = {0x00, 0x00, 0x00, 0x00
+#if PANEL_WIDTH > 1
+                                    ,0x00, 0x00, 0x00, 0x00
+#endif
+#if PANEL_WIDTH > 2
+                                    ,0x00, 0x00, 0x00, 0x00
+#endif
+};
+
 //Current Frame is currently displayed.
-volatile uint8_t currentFrame = 0;//or 1
-volatile uint8_t loadedFrame = 1;
+uint8_t currentFrame = 0;//or 1
+uint8_t loadedFrame = 1;
 
-volatile uint8_t cathodePos = DISPLAY_WIDTH;
+uint8_t cathodePos = DISPLAY_WIDTH;
 
-volatile uint16_t rotation = 0;
+uint16_t rotation = 0;
 
 /*
 anode_latch P1.0
@@ -287,7 +296,7 @@ void igppChangeBuffer()
 
 void SpiInit()
 {
-    P4SEL |= BIT0 | /*BIT1 | BIT3 |*/ BIT4;
+    P4SEL |= BIT0 | BIT1 | BIT3 | BIT4;
 
     PMAPKEYID = 0x2D52;
 
@@ -295,15 +304,27 @@ void SpiInit()
 
     P4MAP4 = PM_UCA0SIMO;
 
+    P4MAP1 = PM_UCB0SIMO;
+    P4MAP3 = PM_UCB0CLK;
+
     UCA0CTL0 = UCCKPH | UCMSB | UCMST | UCSYNC;//MSB, syncronous
     UCA0CTL1 = UCSSEL_2; //SMCLK
 
     UCA0BR0 = 4;// 26MHz/4 = 7.5MHz
 
+    UCB0CTL0 = UCCKPH  | UCMSB | UCMST | UCSYNC;//MSB, syncronous
+    UCB0CTL1 = UCSSEL_2; //SMCLK
+
+    UCB0BR0 = 4;// 26MHz/4 = 7.5MHz
+
     //UCA0IE = UCTXIE; //enable interrupt
     DMACTL0 |= DMA0TSEL_17;  // UCA0TXIFG as trigger
     DMA0CTL = DMASRCINCR_3 + DMADSTBYTE + DMASRCBYTE + DMAIE + DMAIFG;
     __data16_write_addr((unsigned short) &DMA0DA,(unsigned long) &UCA0TXBUF);
+    //UCA0IE = UCTXIE; //enable interrupt
+    DMACTL0 |= DMA1TSEL_19;  // UCA0TXIFG as trigger
+    DMA1CTL = DMASRCINCR_2 + DMADSTBYTE + DMASRCBYTE;
+    __data16_write_addr((unsigned short) &DMA1DA,(unsigned long) &UCB0TXBUF);
 
 }
 
@@ -314,6 +335,15 @@ inline void SpiASend(uint8_t* dataPtr, uint16_t size)
     DMA0CTL |= DMAEN;
     UCA0IFG &= ~UCTXIFG;
     UCA0IFG |=  UCTXIFG;
+}
+
+inline void SpiBSend(uint8_t* dataPtr, uint16_t size)
+{
+    __data16_write_addr((unsigned short) &DMA1SA,(unsigned long) dataPtr);
+    DMA1SZ = size;
+    DMA1CTL |= DMAEN;
+    UCB0IFG &= ~UCTXIFG;
+    UCB0IFG |=  UCTXIFG;
 }
 
 void igppInit()
@@ -338,30 +368,28 @@ void igppInit()
 
 inline void igppNextCathode()
 {
+    uint8_t byte = cathodePos >> 3;
+    cathodesArray[byte] = 0;
     if (++cathodePos >= DISPLAY_WIDTH)
     {
        cathodePos = 0;
+       ++rotation;
+       if (rotation > 50)
+       {
+           rotation = 0;
+           igppBufferFlag = igppChangeBufferPending;
+       }
        if (igppBufferFlag == igppChangeBufferPending)
        {
            igppBufferFlag = igppFlagNone;
            loadedFrame = currentFrame;
            currentFrame = (currentFrame + 1) & 0x01;
        }
-       //igppCathodeClear();
-       P1OUT  &= ~BIT4;
-       P1OUT  |= BIT4;
-       //igppCathodeDataHigh();
-       P4OUT  |= BIT1;
-       //__no_operation();
-       //igppCathodeTick();
-       P4OUT  |= BIT3;
-       //__no_operation();
-       P4OUT  &= ~(BIT1 | BIT3);//++igppCathodeDataLow();
     }
-    else
-    {
-        igppCathodeTick();
-    }
+    byte = cathodePos >> 3;
+    uint8_t bit = cathodePos  & 0x07;
+    cathodesArray[byte] |= (1 << bit);
+    SpiBSend(((uint8_t*)cathodesArray) + CATHODE_BYTES, CATHODE_BYTES);
 }
 
 inline uint16_t realCathodePos(uint16_t cathodePos)
@@ -381,7 +409,7 @@ void __attribute__ ((interrupt(TIMER0_A0_VECTOR))) TIMERA0_ISR (void)
 {
     P6OUT |= BIT0;
     //NextFrame
-    igppAnodeClear();
+    igppClearAll();
     SpiASend(anodesEmpty, ANODE_BYTES);
     igppFlags = igppAnodesErase;
     P6OUT &= ~BIT0;
@@ -404,10 +432,10 @@ void __attribute__ ((interrupt(DMA_VECTOR))) DmaIsr (void)
        {
            igppFlags = igppFlagNone;
            igppNextCathode();
+           igppAnodeLatch();
            //Select next cathode and anode data:
            uint8_t* frame = (uint8_t*)frameBuffer[currentFrame];
            uint8_t* AnodesDataPtr = frame + (ANODE_BYTES * realCathodePos(cathodePos));
-           igppLatchAll();
            SpiASend(AnodesDataPtr, ANODE_BYTES);
        }
        else

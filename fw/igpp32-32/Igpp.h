@@ -46,6 +46,7 @@ void igppAnodeClear();
 inline void igppCathodeTick()
 {
     P4OUT  |= BIT3;
+    __no_operation();
     P4OUT  &= ~BIT3;
 }
 
