@@ -32,6 +32,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.*/
 
 #include "Igpp.h"
 
+#include "rand.h"
+
 // how many turns per game before starting a new game
 // you can also use the reset button on the board
 #define TURNS_MAX 100

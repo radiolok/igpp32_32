@@ -1,0 +1,6 @@
+[submodule "fw/u8g2"]
+	path = fw/u8g2
+	url = git@github.com:olikraus/u8g2.git
+[submodule "fw/msp430-rng"]
+	path = fw/msp430-rng
+	url = git@github.com:0/msp430-rng.git

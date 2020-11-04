@@ -30,6 +30,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.*/
 #include "driverlib.h"
 
 #include "Igpp.h"
+#include "game_of_life.h"
 
 #include "USB_config/descriptors.h"
 #include "USB_API/USB_Common/device.h"
@@ -72,17 +73,38 @@ int main(void)
   PMM_setVCore(PMM_CORE_LEVEL_3);
 
   USBHAL_initPorts();           // Config GPIOS for low-power (output low)
-  USBHAL_initClocks(26000000);   // Config clocks. MCLK=SMCLK=FLL=8MHz; ACLK=REFO=32kHz
+  UCSCTL3 = SELREF_2;                       // Set DCO FLL reference = REFO
+
+  __bis_SR_register(SCG0);                  // Disable the FLL control loop
+  UCSCTL0 = 0x0000;                         // Set lowest possible DCOx, MODx
+  UCSCTL1 = DCORSEL_7;                      // Select DCO range 50MHz operation
+  UCSCTL2 = FLLD_0 + 731;                   // Set DCO Multiplier for 24MHz
+                                          // (N + 1) * FLLRef = Fdco
+                                          // (731 + 1) * 32768 = 24MHz
+  __bic_SR_register(SCG0);                  // Enable the FLL control loop
+
+  __delay_cycles(782000);
+
+  UCSCTL4 |= SELM_5;                       //MCLK = XT2 = 26MHz
+  UCSCTL5 |= DIVM_0;                       //f_dco/1
+
+  UCSCTL4 |= SELS_5;                      // SMCLK = XT2 = 26MHz
+  UCSCTL5 |= DIVS_0;                      // f_dco / 1
+
+  UCSCTL4 |= SELA_1;                        // Set ACLK = VCO
 
     //USB_setup(TRUE, TRUE); // Init USB & events; if a host is present, connect
 
     __enable_interrupt();  // Enable interrupts globally
 
     igppInit();
-    uint16_t rotation = 0;
+
+    //init_grid();
         while (1)
         {
             __bis_SR_register(LPM0_bits + GIE);
+            //checkEpoch();
+
            /*uint8_t ReceiveError = 0;
             uint8_t SendError = 0;
             uint16_t count;

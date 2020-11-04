@@ -175,6 +175,14 @@ void init_grid()
 void reset_grid() {
   NoChanges = 0;
   Turns = 0;
+  uint16_t* ptr = (uint16_t*)currentEpoch;
+  const uint16_t panelSize = PANEL_DATA_SIZE/2;
+  static uint16_t value = 61169;
+  for (uint16_t i = 0; i < panelSize; ++i)
+  {
+      value =  prand(value);
+      ptr[i] = value;
+  }
   //TODO: random should be here
   memset(currentEpoch, 0, PANEL_DATA_SIZE);
   display_grid();
