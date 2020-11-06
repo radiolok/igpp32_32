@@ -38,12 +38,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.*/
 // you can also use the reset button on the board
 #define TURNS_MAX 100
 // how many turns to wait if there are no changes before starting a new game
-#define NO_CHANGES_RESET 10
+#define NO_CHANGES_RESET 5
 
+
+void initEpoch();
 void checkEpoch();
 void countEpoch();
 uint8_t count_neighboughs(uint8_t x, uint8_t y);
-void init_grid();
+
 void reset_grid();
 void display_grid();
 #endif /* GAME_OF_LIFE_H_ */

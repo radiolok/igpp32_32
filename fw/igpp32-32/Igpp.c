@@ -27,7 +27,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.*/
 #include <Igpp.h>
 
 //Double buffering mechanism
-volatile uint8_t frameBuffer[2][PANEL_DATA_SIZE] = {
+#define PICTURE_BYTES (12)
+
+uint8_t frameBuffer[2][1152] = {
 {
  0x00, 0x00, 0x00, 0x00, 0x07, 0x84, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
  0x00, 0x00, 0x00, 0x00, 0x0F, 0xFE, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -227,10 +229,10 @@ volatile uint8_t frameBuffer[2][PANEL_DATA_SIZE] = {
 };
 
 uint8_t anodesEmpty[ANODE_BYTES] = {0xFF, 0xFF, 0xFF, 0xFF
-#if PANEL_HEIGHT > 1
+#if PANEL_ROWS > 1
                                     ,0xFF, 0xFF, 0xFF, 0xFF
 #endif
-#if PANEL_HEIGHT > 2
+#if PANEL_ROWS > 2
                                     ,0xFF, 0xFF, 0xFF, 0xFF
 #endif
 };
@@ -366,7 +368,16 @@ inline void igppNextCathode()
 
 inline uint16_t realCathodePos(uint16_t cathodePos)
 {
-    return ((64 - (cathodePos & 0xE0)) + (cathodePos & 0x1F));
+#if PANEL_ROWS == 1
+    return cathodePos;
+#endif
+#if PANEL_ROWS == 2
+    return ((32 - (cathodePos & 0xE0)) + (cathodePos & 0x1F));
+#endif
+#if PANEL_ROWS == 3
+       return ((64 - (cathodePos & 0xE0)) + (cathodePos & 0x1F));
+#endif
+
 }
 
 //This timer does 16kHz f_scan
@@ -406,7 +417,7 @@ void __attribute__ ((interrupt(DMA_VECTOR))) DmaIsr (void)
            igppNextCathode();
            //Select next cathode and anode data:
            uint8_t* frame = (uint8_t*)frameBuffer[currentFrame];
-           uint8_t* AnodesDataPtr = frame + (ANODE_BYTES * realCathodePos(cathodePos));
+           uint8_t* AnodesDataPtr = frame + (PICTURE_BYTES * realCathodePos(cathodePos));
            igppLatchAll();
            SpiASend(AnodesDataPtr, ANODE_BYTES);
        }

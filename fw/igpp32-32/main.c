@@ -95,15 +95,20 @@ int main(void)
 
     //USB_setup(TRUE, TRUE); // Init USB & events; if a host is present, connect
 
-    __enable_interrupt();  // Enable interrupts globally
-
     igppInit();
 
-    //init_grid();
-        while (1)
+#ifdef GAME_OF_LIFE
+    initEpoch();
+#endif
+
+    __enable_interrupt();  // Enable interrupts globally
+
+    while (1)
         {
-            __bis_SR_register(LPM0_bits + GIE);
-            //checkEpoch();
+            //__bis_SR_register(LPM0_bits + GIE);
+#ifdef GAME_OF_LIFE
+            checkEpoch();
+#endif
 
            /*uint8_t ReceiveError = 0;
             uint8_t SendError = 0;

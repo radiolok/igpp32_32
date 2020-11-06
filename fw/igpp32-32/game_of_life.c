@@ -44,12 +44,12 @@ void checkEpoch() {
   // reset the grid if no changes have occured recently
   // for when the game enters a static stable state
   if (NoChanges > NO_CHANGES_RESET) {
-    reset_grid();
+      initEpoch();
   }
   // reset the grid if the loop has been running a long time
   // for when the game cycles between a few stable states
   if (Turns > TURNS_MAX) {
-    reset_grid();
+      initEpoch();
   }
 
   display_grid();
@@ -60,7 +60,7 @@ inline uint8_t getArrayBit(uint8_t* ptr, uint16_t x, uint16_t y)
     uint8_t byte = y >> 3;
     uint8_t pos = y & 0x07;
     uint8_t* cell = ptr + ANODE_BYTES * x + byte;
-    return ((*cell) & (1 << pos)) ? 1 : 0;
+    return ((*cell) & (1 << pos)) ? 0 : 1;
 }
 
 inline void setArrayBit(uint8_t* ptr, uint16_t x, uint16_t y, uint8_t set)
@@ -70,11 +70,11 @@ inline void setArrayBit(uint8_t* ptr, uint16_t x, uint16_t y, uint8_t set)
     uint8_t* cell = ptr + ANODE_BYTES * x + byte;
     if (set != 0)
     {
-        *cell |= (1 << pos);
+        *cell &= ~(1<< pos);
     }
     else
     {
-        *cell &= ~(1<< pos);
+        *cell |= (1 << pos);
     }
 }
 
@@ -162,7 +162,7 @@ uint8_t count_neighboughs(uint8_t x, uint8_t y) {
   return count;
 }
 
-void init_grid()
+void initEpoch()
 {
     currentEpoch = igppCurrentBufferPtr();
     reset_grid();
@@ -175,16 +175,12 @@ void init_grid()
 void reset_grid() {
   NoChanges = 0;
   Turns = 0;
-  uint16_t* ptr = (uint16_t*)currentEpoch;
-  const uint16_t panelSize = PANEL_DATA_SIZE/2;
   static uint16_t value = 61169;
-  for (uint16_t i = 0; i < panelSize; ++i)
+  for (uint16_t i = 0; i < PANEL_DATA_SIZE; ++i)
   {
       value =  prand(value);
-      ptr[i] = value;
+      currentEpoch[i] = (uint8_t)value;
   }
-  //TODO: random should be here
-  memset(currentEpoch, 0, PANEL_DATA_SIZE);
   display_grid();
 }
 
