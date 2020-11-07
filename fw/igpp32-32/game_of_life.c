@@ -176,10 +176,12 @@ void reset_grid() {
   NoChanges = 0;
   Turns = 0;
   static uint16_t value = 61169;
-  for (uint16_t i = 0; i < PANEL_DATA_SIZE; ++i)
+  uint16_t panel_size = PANEL_DATA_SIZE /2;
+  uint16_t* panel_16bit = (uint16_t*)currentEpoch;
+  for (uint16_t i = 0; i < panel_size; ++i)
   {
+      *(panel_16bit + i) = value;
       value =  prand(value);
-      currentEpoch[i] = (uint8_t)value;
   }
   display_grid();
 }

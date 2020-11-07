@@ -289,23 +289,17 @@ void igppChangeBuffer()
 
 void SpiInit()
 {
-    P4SEL |= BIT0 | /*BIT1 | BIT3 |*/ BIT4;
+    P3SEL |= BIT0 | BIT2;
 
-    PMAPKEYID = 0x2D52;
+    UCB0CTL0 = UCCKPH | UCMSB | UCMST | UCSYNC;//MSB, syncronous
+    UCB0CTL1 = UCSSEL_2; //SMCLK
 
-    P4MAP0 = PM_UCA0CLK;
-
-    P4MAP4 = PM_UCA0SIMO;
-
-    UCA0CTL0 = UCCKPH | UCMSB | UCMST | UCSYNC;//MSB, syncronous
-    UCA0CTL1 = UCSSEL_2; //SMCLK
-
-    UCA0BR0 = 4;// 26MHz/4 = 7.5MHz
+    UCB0BR0 = 4;// 26MHz/4 = 7.5MHz
 
     //UCA0IE = UCTXIE; //enable interrupt
-    DMACTL0 |= DMA0TSEL_17;  // UCA0TXIFG as trigger
+    DMACTL0 |= DMA0TSEL_19;  // UCB0TXIFG as trigger
     DMA0CTL = DMASRCINCR_3 + DMADSTBYTE + DMASRCBYTE + DMAIE + DMAIFG;
-    __data16_write_addr((unsigned short) &DMA0DA,(unsigned long) &UCA0TXBUF);
+    __data16_write_addr((unsigned short) &DMA0DA,(unsigned long) &UCB0TXBUF);
 
 }
 
@@ -314,14 +308,16 @@ inline void SpiASend(uint8_t* dataPtr, uint16_t size)
     __data16_write_addr((unsigned short) &DMA0SA,(unsigned long) dataPtr);
     DMA0SZ = size;
     DMA0CTL |= DMAEN;
-    UCA0IFG &= ~UCTXIFG;
-    UCA0IFG |=  UCTXIFG;
+    UCB0IFG &= ~UCTXIFG;
+    UCB0IFG |=  UCTXIFG;
 }
 
 void igppInit()
 {
-    P1DIR |= BIT0 | BIT1 | BIT2 | BIT3 | BIT4 | BIT5;
-    P1OUT &= ~(BIT0 | BIT1 | BIT2 | BIT3 | BIT4 | BIT5);
+    P1DIR &= ~BIT1;
+    P1REN |= BIT1;
+    P6DIR = BIT0 | BIT1 | BIT2 | BIT3;
+    P6OUT &= ~(BIT0 | BIT1 | BIT2 | BIT3);
 
     P4DIR |= BIT1 | BIT3;
     P4OUT &= ~(BIT1 | BIT3);
@@ -332,10 +328,10 @@ void igppInit()
 
     TA0R = 0x00;
     TA0CCTL0 |= CCIE; //CCR0 interrupt
-    TA0CCR0 = 606;// 6.5MHz/ 16kHz
+    TA0CCR0 = 906;// 6.5MHz/ 16kHz
     TA0CTL |= TASSEL_2 | MC_1 | ID_2; //SMCLK 26MHz div 4 = 6.5MHz
 
-    P1OUT |= BIT1 | BIT4; //MR is up
+    P6OUT |= BIT0 | BIT3; //MR is up
 }
 
 inline void igppNextCathode()
@@ -349,11 +345,8 @@ inline void igppNextCathode()
            loadedFrame = currentFrame;
            currentFrame = (currentFrame + 1) & 0x01;
        }
-       //igppCathodeClear();
-       P1OUT  &= ~BIT4;
-       P1OUT  |= BIT4;
-       //igppCathodeDataHigh();
-       P4OUT  |= BIT1;
+       igppCathodeClear();
+       igppCathodeDataHigh();
        //__no_operation();
        //igppCathodeTick();
        P4OUT  |= BIT3;
@@ -390,12 +383,10 @@ void __attribute__ ((interrupt(TIMER0_A0_VECTOR))) TIMERA0_ISR (void)
 #error Compiler not supported!
 #endif
 {
-    P6OUT |= BIT0;
     //NextFrame
     igppAnodeClear();
     SpiASend(anodesEmpty, ANODE_BYTES);
     igppFlags = igppAnodesErase;
-    P6OUT &= ~BIT0;
     __bic_SR_register_on_exit(LPM3_bits);
 }
 
@@ -408,7 +399,6 @@ void __attribute__ ((interrupt(DMA_VECTOR))) DmaIsr (void)
 #error Compiler not supported!
 #endif
 {
-    P6OUT |= BIT0;
     uint16_t dmaVector = DMAIV;
     if (dmaVector & DMAIV_DMA0IFG) {
         if (igppFlags == igppAnodesErase)
@@ -425,15 +415,12 @@ void __attribute__ ((interrupt(DMA_VECTOR))) DmaIsr (void)
        {
            igppLatchAll();
        }
-        P6OUT &= ~BIT0;
         return;
     }
     if (dmaVector & DMAIV_DMA1IFG) {
-        P6OUT &= ~BIT0;
         return;
     }
     if (dmaVector & DMAIV_DMA2IFG) {
-        P6OUT &= ~BIT0;
         return;
     }
 

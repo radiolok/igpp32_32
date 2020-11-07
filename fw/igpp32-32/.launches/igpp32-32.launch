@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <launchConfiguration type="com.ti.ccstudio.debug.launchType.device.debugging">
 <mapAttribute key="ccs.memoryview.format">
+<mapEntry key="org.eclipse.cdt.debug.ui.memory.memorybrowser.MemoryBrowser@#$TI MSP430 USB1/MSP430@#$0" value="16-Bit Hex - TI Style"/>
 <mapEntry key="org.eclipse.cdt.debug.ui.memory.memorybrowser.MemoryBrowser@#$TI MSP430 USB1_0/MSP430@#$0" value="16-Bit Hex - TI Style"/>
 </mapAttribute>
 <mapAttribute key="ccs.memoryview.pageexpr">
+<mapEntry key="org.eclipse.cdt.debug.ui.memory.memorybrowser.MemoryBrowser@#$TI MSP430 USB1/MSP430" value="@@0x2400"/>
 <mapEntry key="org.eclipse.cdt.debug.ui.memory.memorybrowser.MemoryBrowser@#$TI MSP430 USB1_0/MSP430" value="@@0x2400"/>
 </mapAttribute>
 <stringAttribute key="com.ti.ccstudio.debug.debugModel.ATTR_DEBUGGER_PROPERTIES.D:\radiolok@oc.urlnn.ru\Projects\20200303-IGPP32_32\fw\igpp32-32\targetConfigs\MSP430F5510.ccxml.TI MSP430 USB1_0/MSP430" value="&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot; standalone=&quot;no&quot; ?&gt;&#10;&lt;PropertyValues&gt;&#10;&#10;  &lt;property id=&quot;ConnectOnStartup&quot;&gt;&#10;    &lt;curValue&gt;1&lt;/curValue&gt;&#10;  &lt;/property&gt;&#10;&#10;  &lt;property id=&quot;EnableInstalledBreakpoint&quot;&gt;&#10;    &lt;curValue&gt;1&lt;/curValue&gt;&#10;  &lt;/property&gt;&#10;&#10;&lt;/PropertyValues&gt;&#10;"/>
@@ -25,8 +27,8 @@
 <stringAttribute key="com.ti.ccstudio.debug.debugModel.ATTR_PROJECT.D:\radiolok@oc.urlnn.ru\Projects\20200303-IGPP32_32\fw\igpp32-32\targetConfigs\MSP430F5510.ccxml.TI MSP430 USB1_0/MSP430" value="igpp32-32"/>
 <stringAttribute key="com.ti.ccstudio.debug.debugModel.ATTR_PROJECT.D:\radiolok@oc.urlnn.ru\Projects\20200303-IGPP32_32\fw\igpp32-32\targetConfigs\MSP430F5529.ccxml.TI MSP430 USB1/MSP430" value="igpp32-32"/>
 <stringAttribute key="com.ti.ccstudio.debug.debugModel.ATTR_TARGET_CONFIG" value="${target_config_active_default:igpp32-32}"/>
-<stringAttribute key="com.ti.ccstudio.debug.debugModel.MRU_PROGRAM.D:\radiolok@oc.urlnn.ru\Projects\20200303-IGPP32_32\fw\igpp32-32\targetConfigs\MSP430F5510.ccxml.TI MSP430 USB1_0/MSP430" value="D:/radiolok@oc.urlnn.ru\Projects\20200303-IGPP32_32\fw\igpp32-32\Debug__TI\igpp32-32.out"/>
-<stringAttribute key="com.ti.ccstudio.debug.debugModel.MRU_PROGRAM.D:\radiolok@oc.urlnn.ru\Projects\20200303-IGPP32_32\fw\igpp32-32\targetConfigs\MSP430F5529.ccxml.TI MSP430 USB1/MSP430" value="D:/radiolok@oc.urlnn.ru\Projects\20200303-IGPP32_32\fw\igpp32-32\Debug__TI\igpp32-32.out"/>
+<stringAttribute key="com.ti.ccstudio.debug.debugModel.MRU_PROGRAM.D:\radiolok@oc.urlnn.ru\Projects\20200303-IGPP32_32\fw\igpp32-32\targetConfigs\MSP430F5510.ccxml.TI MSP430 USB1_0/MSP430" value="D:/radiolok@oc.urlnn.ru\Projects\20200303-IGPP32_32\fw\igpp32-32\Debug_usb\igpp32-32.out"/>
+<stringAttribute key="com.ti.ccstudio.debug.debugModel.MRU_PROGRAM.D:\radiolok@oc.urlnn.ru\Projects\20200303-IGPP32_32\fw\igpp32-32\targetConfigs\MSP430F5529.ccxml.TI MSP430 USB1/MSP430" value="D:/radiolok@oc.urlnn.ru\Projects\20200303-IGPP32_32\fw\igpp32-32\Debug_usb\igpp32-32.out"/>
 <listAttribute key="org.eclipse.debug.core.MAPPED_RESOURCE_PATHS">
 <listEntry value="/igpp32-32"/>
 </listAttribute>

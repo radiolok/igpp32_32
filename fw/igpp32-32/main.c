@@ -30,24 +30,15 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.*/
 #include "driverlib.h"
 
 #include "Igpp.h"
+#include "uart.h"
 #include "game_of_life.h"
 
-#include "USB_config/descriptors.h"
-#include "USB_API/USB_Common/device.h"
-#include "USB_API/USB_Common/usb.h"                 // USB-specific functions
-#include "USB_API/USB_CDC_API/UsbCdc.h"
-#include "USB_app/usbConstructs.h"
-
+/*
+ * NOTE: Modify hal.h to select a specific evaluation board and customize for
+ * your own board.
+ */
 #include "hal.h"
 
-// Global flags set by events
-volatile uint8_t bCDCDataReceived_event = FALSE;  // Flag set by event handler to
-                                               // indicate data has been
-                                               // received into USB buffer
-
-#define BUFFER_SIZE 1152
-char nl[2] = "\n";
-uint16_t count;
 
 int main(void)
 {
@@ -59,7 +50,7 @@ int main(void)
 
     MCLK = 24MHz
 
-    SMCLK = 6MHz
+    SMCLK = 24MHz
 
     F_scan = 40kHz
 
@@ -85,17 +76,16 @@ int main(void)
 
   __delay_cycles(782000);
 
-  UCSCTL4 |= SELM_5;                       //MCLK = XT2 = 26MHz
+  UCSCTL4 |= SELM_3;                       //MCLK = FLL = 24MHz
   UCSCTL5 |= DIVM_0;                       //f_dco/1
 
-  UCSCTL4 |= SELS_5;                      // SMCLK = XT2 = 26MHz
+  UCSCTL4 |= SELS_3;                      // SMCLK = FLL = 24MHz
   UCSCTL5 |= DIVS_0;                      // f_dco / 1
 
-  UCSCTL4 |= SELA_1;                        // Set ACLK = VCO
-
-    //USB_setup(TRUE, TRUE); // Init USB & events; if a host is present, connect
+  UCSCTL4 |= SELA_2;                        // Set ACLK = VCO
 
     igppInit();
+    uart_init();
 
 #ifdef GAME_OF_LIFE
     initEpoch();
@@ -103,118 +93,16 @@ int main(void)
 
     __enable_interrupt();  // Enable interrupts globally
 
+   // uart_putc('A');
+
     while (1)
         {
-            //__bis_SR_register(LPM0_bits + GIE);
+        __bis_SR_register(LPM0_bits + GIE);
+        //uart_putc('A');
+
 #ifdef GAME_OF_LIFE
             checkEpoch();
 #endif
 
-           /*uint8_t ReceiveError = 0;
-            uint8_t SendError = 0;
-            uint16_t count;
-
-            // Check the USB state and directly main loop accordingly
-            switch (USB_getConnectionState())
-            {
-                // This case is executed while your device is enumerated on the
-                // USB host
-                case ST_ENUM_ACTIVE:
-
-                    // Sleep if there are no bytes to process.
-                    __disable_interrupt();
-                    if (!USBCDC_getBytesInUSBBuffer(CDC0_INTFNUM)) {
-
-                        // Enter LPM0 until awakened by an event handler
-                        __bis_SR_register(LPM0_bits + GIE);
-                    }
-
-                    __enable_interrupt();
-
-                    // Exit LPM because of a data-receive event, and
-                    // fetch the received data
-                    if (bCDCDataReceived_event){
-
-                        // Clear flag early -- just in case execution breaks
-                        // below because of an error
-                        bCDCDataReceived_event = FALSE;
-                        uint8_t* currentBuffer = igppLoadBufferPtr();
-                        count = USBCDC_receiveDataInBuffer((uint8_t*)currentBuffer,
-                            BUFFER_SIZE,
-                            CDC0_INTFNUM);
-
-                        // Count has the number of bytes received into dataBuffer
-                        // Echo back to the host.
-                        if (USBCDC_sendDataInBackground((uint8_t*)currentBuffer,
-                                count, CDC0_INTFNUM, 1)){
-                            // Exit if something went wrong.
-                            SendError = 0x01;
-                            break;
-                        }
-                    }
-                    break;
-
-                // These cases are executed while your device is disconnected from
-                // the host (meaning, not enumerated); enumerated but suspended
-                // by the host, or connected to a powered hub without a USB host
-                // present.
-                case ST_PHYS_DISCONNECTED:
-                case ST_ENUM_SUSPENDED:
-                case ST_PHYS_CONNECTED_NOENUM_SUSP:
-                    __bis_SR_register(LPM0_bits + GIE);
-                    _NOP();
-                    break;
-
-                // The default is executed for the momentary state
-                // ST_ENUM_IN_PROGRESS.  Usually, this state only last a few
-                // seconds.  Be sure not to enter LPM3 in this state; USB
-                // communication is taking place here, and therefore the mode must
-                // be LPM0 or active-CPU.
-                case ST_ENUM_IN_PROGRESS:
-                default:;
-            }
-
-            if (ReceiveError || SendError){
-                // TO DO: User can place code here to handle error
-            }*/
         }  //while(1)
-}
-
-/*
- * ======== UNMI_ISR ========
- */
-#if defined(__TI_COMPILER_VERSION__) || (__IAR_SYSTEMS_ICC__)
-#pragma vector = UNMI_VECTOR
-__interrupt void UNMI_ISR (void)
-#elif defined(__GNUC__) && (__MSP430__)
-void __attribute__ ((interrupt(UNMI_VECTOR))) UNMI_ISR (void)
-#else
-#error Compiler not found!
-#endif
-{
-    switch (__even_in_range(SYSUNIV, SYSUNIV_BUSIFG ))
-    {
-        case SYSUNIV_NONE:
-            __no_operation();
-            break;
-        case SYSUNIV_NMIIFG:
-            __no_operation();
-            break;
-        case SYSUNIV_OFIFG:
-            UCS_clearFaultFlag(UCS_XT2OFFG);
-            UCS_clearFaultFlag(UCS_DCOFFG);
-            SFR_clearInterrupt(SFR_OSCILLATOR_FAULT_INTERRUPT);
-            break;
-        case SYSUNIV_ACCVIFG:
-            __no_operation();
-            break;
-        case SYSUNIV_BUSIFG:
-            // If the CPU accesses USB memory while the USB module is
-            // suspended, a "bus error" can occur.  This generates an NMI.  If
-            // USB is automatically disconnecting in your software, set a
-            // breakpoint here and see if execution hits it.  See the
-            // Programmer's Guide for more information.
-            SYSBERRIV = 0; // clear bus error flag
-            USB_disable(); // Disable
-    }
 }

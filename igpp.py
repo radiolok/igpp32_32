@@ -47,6 +47,9 @@ def saveHexArray(array, outfile):
             f.write(", ")
     f.close()
 
+def current_milli_time():
+   return int(round(time.time() * 1000))
+
 def saveByteArray(array, outfile):
     byteArray = bytearray(array)
     f = open(outfile, 'wb')
@@ -88,47 +91,23 @@ if __name__ == '__main__':
                 saveByteArray(hex_array, outputFile)
             else:
                 saveHexArray(hex_array, outputFile)
-    if args.dirout != None and args.port != None:
-        time_period = 1000/args.fps #in ms
+    if args.dirin != None and args.port != None:
+        time_period = 1000/int(args.fps) #in ms
 
-        current_milli_time = lambda: int(round(time.time() * 1000))
-
-        files = [f for f in listdir(args.dirout) if isfile(join(args.dirout, f))]
+        files = [f for f in listdir(args.dirin) if isfile(join(args.dirin, f))]
         try:
-            ser = serial.Serial(args.port, 512000, timeout=0)
-            time.sleep(2);
-            previous_time = current_milli_time()
+            ser = serial.Serial(args.port, 500000, timeout=0)
+            time.sleep(2)
+            print(ser)
+            start_time = current_milli_time()
+            frames = 0
             for outputFile in files:
-                current_time = current_milli_time()
-                while current_time - previous_time < time_period:
-                    pass
-                ser.write(open(join(args.dirout, outputFile),"rb").read())
+                print("send %s" % (outputFile))
+                ser.write(open(join(args.dirin, outputFile),"rb").read())
+                frames += 1
+                time.sleep(0.0382)
+            current = current_milli_time()
+            print("overallTime: %d  (%d frames) - %f per frame"% (current - start_time, frames, (current - start_time)/frames))
         except serial.serialutil.SerialException:
             print('no COM port connection')
 
-
-#
-#
-#filter = hid.HidDeviceFilter(vendor_id = 0x2047, product_id = 0x3ED)
-#hid_device = filter.get_devices()
-#device = hid_device[0]
-#device.open()
-#print(hid_device)
-
-#target_usage = hid.get_full_usage_id(0x00, 0x3f)
-#device.set_raw_data_handler(sample_handler)
-#print(target_usage)
-
-
-#report = device.find_output_reports()
-
-#print(report)
-#print(report[0])
-
-#buffer = [0xFF]*64
-#buffer[0] = 63
-
-#print(buffer)
-
-#report[0].set_raw_data(buffer)
-#report[0].send()

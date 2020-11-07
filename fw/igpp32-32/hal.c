@@ -37,8 +37,6 @@
 
 #include "driverlib.h"
 
-#include "USB_API/USB_Common/device.h"
-#include "USB_config/descriptors.h"
 
 #include "hal.h"
 

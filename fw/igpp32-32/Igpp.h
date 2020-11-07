@@ -61,42 +61,43 @@ inline void igppCathodeDataLow()
 
 inline void igppLatchAll()
 {
-    while (UCA0STAT & UCBUSY)
+    while (UCB0STAT & UCBUSY)
     {
         ;
     }
-    P1OUT  |= BIT0 | BIT3;
-    P1OUT  &= ~( BIT0 | BIT3);
+    P6OUT  |= BIT1 | BIT2;
+    P6OUT  &= ~( BIT1 | BIT2);
 }
 
 inline void igppCathodeClear()
 {
-    P1OUT  &= ~BIT4;
-    P1OUT  |= BIT4;
+    P6OUT  &= ~BIT0;
+    __no_operation();
+    P6OUT  |= BIT0;
 }
 
 inline void igppCathodeLatch()
 {
-    P1OUT  |= BIT3;
-    P1OUT  &= ~BIT3;
+    P6OUT  |= BIT1;
+    P6OUT  &= ~BIT1;
 }
 
 inline void igppAnodeLatch()
 {
-    P1OUT  |= BIT0;
-    P1OUT  &= ~( BIT0);
+    P6OUT  |= BIT2;
+    P6OUT  &= ~( BIT2);
 }
 
 inline void igppAnodeClear()
 {
-    P1OUT  &= ~(BIT1);
-    P1OUT  |= (BIT1);
+    P6OUT  &= ~(BIT3);
+    P6OUT  |= (BIT3);
 }
 
 inline void igppClearAll()
 {
-    P1OUT  &= ~(BIT1 | BIT4);
-    P1OUT  |= (BIT1 | BIT4);
+    P6OUT  &= ~(BIT0 | BIT3);
+    P6OUT  |= (BIT0 | BIT3);
 }
 
 void igppNextFrame();
