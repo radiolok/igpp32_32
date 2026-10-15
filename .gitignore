@@ -1,3 +1,4 @@
 *.gbr
 diff/
 
+__pycache__/
