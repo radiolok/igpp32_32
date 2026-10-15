@@ -29,6 +29,9 @@ add_executable(igpp32-32
 
 set_target_properties(igpp32-32 PROPERTIES SUFFIX ".elf")
 
+# Vendor TI driverlib: keep its warnings out of our build output.
+set_source_files_properties(${DRIVERLIB_SOURCES} PROPERTIES COMPILE_OPTIONS "-w")
+
 target_include_directories(igpp32-32 PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/driverlib/MSP430F5xx_6xx
