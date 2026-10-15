@@ -69,7 +69,7 @@ a('<title>ГИП10000 на стероидах — структурная схе�
 a('<defs>')
 a('<pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">'
   f'<path d="M20 0H0V20" fill="none" stroke="{C["grid"]}" stroke-width="0.7"/></pattern>')
-for col in markers:
+for col in sorted(markers):
     a(f'<marker id="arr-{col[1:]}" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" '
       f'orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="{col}"/></marker>')
 a('<filter id="glow" x="-50%" y="-50%" width="200%" height="200%">'
