@@ -50,7 +50,7 @@ jobs:
           path: fw-esp32
           command: >-
             idf.py build &&
-            sh ../tools/check_scan_iram.sh build/igpp.elf | tee build/iram-check.txt &&
+            { sh ../tools/check_scan_iram.sh build/igpp.elf > build/iram-check.txt; r=$?; cat build/iram-check.txt; [ $r -eq 0 ]; } &&
             cd build &&
             esptool.py --chip esp32s3 merge_bin -o igpp-esp32s3-full.bin @flash_args
 
