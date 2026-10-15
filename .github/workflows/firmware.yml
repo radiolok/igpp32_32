@@ -34,7 +34,7 @@ jobs:
             life: OFF
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       # .gitmodules uses SSH URLs; fetch only the submodule the build needs, over HTTPS.
       - name: Checkout msp430-rng submodule
@@ -53,10 +53,14 @@ jobs:
         if: steps.cache-gcc.outputs.cache-hit != 'true'
         run: |
           mkdir -p ~/msp430-gcc && cd ~/msp430-gcc
-          curl -fsSL -o gcc.tar.bz2 \
-            "$MSP430_GCC_URL/msp430-gcc-${MSP430_GCC_VERSION}_linux64.tar.bz2"
-          curl -fsSL -o support.zip \
-            "$MSP430_GCC_URL/msp430-gcc-support-files-${MSP430_SUPPORT_VERSION}.zip"
+          fetch() {
+            curl -fsSL --retry 5 --retry-delay 5 --retry-all-errors -o "$1" "$2" || {
+              echo "::error::download failed: $2 (dns: $(getent hosts dl.ti.com || echo none); $(curl -sS -o /dev/null -w 'http=%{http_code}' "$2" 2>&1 | tr '\n' ' '))"
+              exit 1
+            }
+          }
+          fetch gcc.tar.bz2 "$MSP430_GCC_URL/msp430-gcc-${MSP430_GCC_VERSION}_linux64.tar.bz2"
+          fetch support.zip "$MSP430_GCC_URL/msp430-gcc-support-files-${MSP430_SUPPORT_VERSION}.zip"
           tar xjf gcc.tar.bz2 && mv msp430-gcc-${MSP430_GCC_VERSION}_linux64 toolchain
           unzip -q support.zip
           rm gcc.tar.bz2 support.zip
