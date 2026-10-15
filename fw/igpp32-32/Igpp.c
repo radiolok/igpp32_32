@@ -299,13 +299,13 @@ void SpiInit()
     //UCA0IE = UCTXIE; //enable interrupt
     DMACTL0 |= DMA0TSEL_19;  // UCB0TXIFG as trigger
     DMA0CTL = DMASRCINCR_3 + DMADSTBYTE + DMASRCBYTE + DMAIE + DMAIFG;
-    __data16_write_addr((unsigned short) &DMA0DA,(unsigned long) &UCB0TXBUF);
+    __data16_write_addr((unsigned short) &DMA0DA,(unsigned long)(uintptr_t)&UCB0TXBUF);
 
 }
 
 static inline void SpiASend(uint8_t* dataPtr, uint16_t size)
 {
-    __data16_write_addr((unsigned short) &DMA0SA,(unsigned long) dataPtr);
+    __data16_write_addr((unsigned short) &DMA0SA,(unsigned long)(uintptr_t)dataPtr);
     DMA0SZ = size;
     DMA0CTL |= DMAEN;
     UCB0IFG &= ~UCTXIFG;

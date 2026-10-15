@@ -23,7 +23,7 @@ add_executable(igpp32-32
     uart.c
     hal.c
     game_of_life.c
-    ${RNG_DIR}/rand.c
+    rng.c
     ${DRIVERLIB_SOURCES}
 )
 
