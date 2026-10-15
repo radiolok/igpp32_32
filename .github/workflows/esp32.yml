@@ -50,12 +50,16 @@ jobs:
           path: fw-esp32
           command: >-
             idf.py build &&
+            sh ../tools/check_scan_iram.sh build/igpp.elf | tee build/iram-check.txt &&
             cd build &&
             esptool.py --chip esp32s3 merge_bin -o igpp-esp32s3-full.bin @flash_args
 
-      - name: Size
+      - name: Report
         run: |
-          ls -la fw-esp32/build/*.bin
+          grep -h '::' fw-esp32/build/iram-check.txt || true
+          for f in fw-esp32/build/igpp.bin fw-esp32/build/igpp-esp32s3-full.bin; do
+            echo "::notice::$(basename $f): $(stat -c%s $f) bytes"
+          done
 
       - uses: actions/upload-artifact@v4
         with:
@@ -67,3 +71,4 @@ jobs:
             fw-esp32/build/bootloader/bootloader.bin
             fw-esp32/build/partition_table/partition-table.bin
             fw-esp32/build/flasher_args.json
+            fw-esp32/build/iram-check.txt
