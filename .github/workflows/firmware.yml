@@ -79,7 +79,9 @@ jobs:
             -DIGPP_GAME_OF_LIFE=${{ matrix.life }}
 
       - name: Build
-        run: cmake --build build
+        run: |
+          echo "::add-matcher::.github/gcc-problem-matcher.json"
+          cmake --build build
 
       - uses: actions/upload-artifact@v4
         with:
