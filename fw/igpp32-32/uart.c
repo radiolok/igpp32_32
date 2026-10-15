@@ -46,7 +46,7 @@ void uart_init()
     DMACTL0 |= DMA1TSEL_20;  // USCIA1 receive as trigger
     DMA1CTL = DMADSTINCR_3 + DMADSTBYTE + DMASRCBYTE + DMAIFG + DMADT_4;
     DMA1SZ = PANEL_DATA_SIZE;
-    __data16_write_addr((unsigned short) &DMA1SA,(unsigned long) &UCA1RXBUF);
-    __data16_write_addr((unsigned short) &DMA1DA,(unsigned long) currentBuffer);
+    __data16_write_addr((unsigned short) &DMA1SA,(unsigned long)(uintptr_t)&UCA1RXBUF);
+    __data16_write_addr((unsigned short) &DMA1DA,(unsigned long)(uintptr_t)currentBuffer);
     DMA1CTL |= DMAEN;
 }

@@ -1,0 +1,27 @@
+{
+  "problemMatcher": [
+    {
+      "owner": "gcc",
+      "pattern": [
+        {
+          "regexp": "^(.*?):(\\d+):(\\d*):?\\s+(?:fatal\\s+)?(warning|error):\\s+(.*)$",
+          "file": 1,
+          "line": 2,
+          "column": 3,
+          "severity": 4,
+          "message": 5
+        }
+      ]
+    },
+    {
+      "owner": "gcc-ld",
+      "pattern": [
+        {
+          "regexp": "^(?:.*ld(?:\\.exe)?:\\s+)?(.*?):(?:\\(.*\\)|\\d+):\\s+(undefined reference to .*|multiple definition of .*|region .* overflowed .*)$",
+          "file": 1,
+          "message": 2
+        }
+      ]
+    }
+  ]
+}

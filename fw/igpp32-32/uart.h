@@ -28,7 +28,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.*/
 #define UART_H_
 
 #include "define.h"
-#include "igpp.h"
+#include "Igpp.h"
 
 void uart_init();
 
