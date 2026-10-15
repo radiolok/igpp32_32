@@ -272,12 +272,12 @@ uint8_t* igppCurrentBufferPtr()
     return (uint8_t*)(frameBuffer[currentFrame]);
 }
 
-inline uint8_t* igppLoadBufferData(uint8_t x, uint8_t y)
+static inline uint8_t* igppLoadBufferData(uint8_t x, uint8_t y)
 {
     return (uint8_t*)frameBuffer[loadedFrame] + (ANODE_BYTES * x + y);
 }
 
-inline uint8_t* igppCurrentBufferData(uint8_t x, uint8_t y)
+static inline uint8_t* igppCurrentBufferData(uint8_t x, uint8_t y)
 {
     return (uint8_t*)frameBuffer[currentFrame] + (ANODE_BYTES * x + y);
 }
@@ -303,7 +303,7 @@ void SpiInit()
 
 }
 
-inline void SpiASend(uint8_t* dataPtr, uint16_t size)
+static inline void SpiASend(uint8_t* dataPtr, uint16_t size)
 {
     __data16_write_addr((unsigned short) &DMA0SA,(unsigned long) dataPtr);
     DMA0SZ = size;
@@ -334,7 +334,7 @@ void igppInit()
     P6OUT |= BIT0 | BIT3; //MR is up
 }
 
-inline void igppNextCathode()
+static inline void igppNextCathode()
 {
     if (++cathodePos >= DISPLAY_WIDTH)
     {
@@ -359,7 +359,7 @@ inline void igppNextCathode()
     }
 }
 
-inline uint16_t realCathodePos(uint16_t cathodePos)
+static inline uint16_t realCathodePos(uint16_t cathodePos)
 {
 #if PANEL_ROWS == 1
     return cathodePos;

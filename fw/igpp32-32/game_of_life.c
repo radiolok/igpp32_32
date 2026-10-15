@@ -55,7 +55,7 @@ void checkEpoch() {
   display_grid();
 }
 
-inline uint8_t getArrayBit(uint8_t* ptr, uint16_t x, uint16_t y)
+static inline uint8_t getArrayBit(uint8_t* ptr, uint16_t x, uint16_t y)
 {
     uint8_t byte = y >> 3;
     uint8_t pos = y & 0x07;
@@ -63,7 +63,7 @@ inline uint8_t getArrayBit(uint8_t* ptr, uint16_t x, uint16_t y)
     return ((*cell) & (1 << pos)) ? 0 : 1;
 }
 
-inline void setArrayBit(uint8_t* ptr, uint16_t x, uint16_t y, uint8_t set)
+static inline void setArrayBit(uint8_t* ptr, uint16_t x, uint16_t y, uint8_t set)
 {
     uint8_t byte = y >> 3;
     uint8_t pos = y & 0x07;
