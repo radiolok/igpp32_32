@@ -1,0 +1,21 @@
+menu "IGPP player"
+
+    config IGPP_LIVE_TIMEOUT_MS
+        int "Live stream timeout, ms"
+        default 3000
+        help
+            After this long without frames from USB the playlist resumes.
+
+    config IGPP_ITEM_MIN_SECONDS
+        int "Minimum time per playlist item, s"
+        default 20
+        help
+            Short animations repeat until this time has passed.
+
+    config IGPP_BIN_FRAME_MS
+        int "Frame duration for folders of .bin frames, ms"
+        default 40
+        help
+            igpp.py streams at 25 fps by default.
+
+endmenu

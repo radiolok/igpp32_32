@@ -27,6 +27,14 @@
 
 #include "igpp/frame.hpp"
 
+// step() runs inside an IRAM interrupt on the ESP32: it must be fully inlined
+// there and must not touch data in flash (rodata), see blank_ below.
+#if defined(__GNUC__)
+#define IGPP_ALWAYS_INLINE inline __attribute__((always_inline))
+#else
+#define IGPP_ALWAYS_INLINE inline
+#endif
+
 namespace igpp {
 
 template <class Port>
@@ -38,9 +46,9 @@ public:
     }
 
     // One column of the scan. Called with a fixed period from the scan loop.
-    void step() {
+    IGPP_ALWAYS_INLINE void step() {
         port_.anode_clear();
-        port_.anode_send(kBlankColumn.data());
+        port_.anode_send(blank_.data());
 
         if (++chain_pos_ >= kWidth) {
             chain_pos_ = 0;
@@ -74,6 +82,7 @@ public:
 
 private:
     Port& port_;
+    Column blank_ = kBlankColumn;  // RAM copy: flash may be disabled during step()
     Frame buffers_[2];
     int front_ = 0;
     int chain_pos_ = kWidth;  // the first step() starts a new frame
