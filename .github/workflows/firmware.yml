@@ -1,0 +1,92 @@
+name: firmware
+
+on:
+  push:
+    branches: [master, ci-cmake]
+    paths:
+      - 'fw/**'
+      - '.github/workflows/firmware.yml'
+  pull_request:
+    branches: [master]
+  workflow_dispatch:
+
+env:
+  MSP430_GCC_VERSION: 9.3.1.11
+  MSP430_SUPPORT_VERSION: 1.212
+  MSP430_GCC_PATH: msp430/msp430_public_sw/mcu/msp430/MSPGCC/9_3_1_2/export
+
+jobs:
+  msp430:
+    name: ${{ matrix.name }}
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: launchpad-f5529
+            mcu: msp430f5529
+            life: OFF
+          - name: launchpad-f5529-life
+            mcu: msp430f5529
+            life: ON
+          - name: board-f5510
+            mcu: msp430f5510
+            life: OFF
+
+    steps:
+      - uses: actions/checkout@v5
+
+      # .gitmodules uses SSH URLs; fetch only the submodule the build needs, over HTTPS.
+      - name: Checkout msp430-rng submodule
+        run: |
+          git -c url.https://github.com/.insteadOf=git@github.com: \
+              submodule update --init --depth 1 fw/msp430-rng
+
+      - name: Cache MSP430-GCC
+        id: cache-gcc
+        uses: actions/cache@v4
+        with:
+          path: ~/msp430-gcc
+          key: msp430-gcc-${{ env.MSP430_GCC_VERSION }}-support-${{ env.MSP430_SUPPORT_VERSION }}
+
+      - name: Install MSP430-GCC
+        if: steps.cache-gcc.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p ~/msp430-gcc && cd ~/msp430-gcc
+          # dl.ti.com does not resolve from GitHub runners; software-dl.ti.com is the same CDN.
+          fetch() {
+            for host in software-dl.ti.com dl.ti.com; do
+              url="https://$host/$MSP430_GCC_PATH/$2"
+              curl -fsSL --retry 3 --retry-delay 5 --retry-all-errors -o "$1" "$url" && return 0
+              echo "::warning::download failed: $url"
+            done
+            echo "::error::cannot download $2"
+            exit 1
+          }
+          fetch gcc.tar.bz2 "msp430-gcc-${MSP430_GCC_VERSION}_linux64.tar.bz2"
+          fetch support.zip "msp430-gcc-support-files-${MSP430_SUPPORT_VERSION}.zip"
+          tar xjf gcc.tar.bz2 && mv msp430-gcc-${MSP430_GCC_VERSION}_linux64 toolchain
+          unzip -q support.zip
+          rm gcc.tar.bz2 support.zip
+
+      - name: Configure
+        run: |
+          cmake -S fw/igpp32-32 -B build -G Ninja \
+            -DCMAKE_TOOLCHAIN_FILE=$GITHUB_WORKSPACE/fw/cmake/msp430-gcc.cmake \
+            -DMSP430_GCC_ROOT=$HOME/msp430-gcc/toolchain \
+            -DMSP430_SUPPORT_DIR=$HOME/msp430-gcc/msp430-gcc-support-files/include \
+            -DIGPP_MCU=${{ matrix.mcu }} \
+            -DIGPP_GAME_OF_LIFE=${{ matrix.life }}
+
+      - name: Build
+        run: |
+          echo "::add-matcher::.github/gcc-problem-matcher.json"
+          cmake --build build
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: igpp32-32-${{ matrix.name }}
+          path: |
+            build/igpp32-32.elf
+            build/igpp32-32.hex
+            build/igpp32-32.map

@@ -41,25 +41,24 @@ void spiInit();
 
 void igppInit();
 
-void igppAnodeClear();
 
-inline void igppCathodeTick()
+static inline void igppCathodeTick()
 {
     P4OUT  |= BIT3;
     P4OUT  &= ~BIT3;
 }
 
-inline void igppCathodeDataHigh()
+static inline void igppCathodeDataHigh()
 {
     P4OUT  |= BIT1;
 }
 
-inline void igppCathodeDataLow()
+static inline void igppCathodeDataLow()
 {
     P4OUT  &= ~BIT1;
 }
 
-inline void igppLatchAll()
+static inline void igppLatchAll()
 {
     while (UCB0STAT & UCBUSY)
     {
@@ -69,32 +68,32 @@ inline void igppLatchAll()
     P6OUT  &= ~( BIT1 | BIT2);
 }
 
-inline void igppCathodeClear()
+static inline void igppCathodeClear()
 {
     P6OUT  &= ~BIT0;
     __no_operation();
     P6OUT  |= BIT0;
 }
 
-inline void igppCathodeLatch()
+static inline void igppCathodeLatch()
 {
     P6OUT  |= BIT1;
     P6OUT  &= ~BIT1;
 }
 
-inline void igppAnodeLatch()
+static inline void igppAnodeLatch()
 {
     P6OUT  |= BIT2;
     P6OUT  &= ~( BIT2);
 }
 
-inline void igppAnodeClear()
+static inline void igppAnodeClear()
 {
     P6OUT  &= ~(BIT3);
     P6OUT  |= (BIT3);
 }
 
-inline void igppClearAll()
+static inline void igppClearAll()
 {
     P6OUT  &= ~(BIT0 | BIT3);
     P6OUT  |= (BIT0 | BIT3);
