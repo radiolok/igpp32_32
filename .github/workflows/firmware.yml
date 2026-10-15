@@ -13,7 +13,7 @@ on:
 env:
   MSP430_GCC_VERSION: 9.3.1.11
   MSP430_SUPPORT_VERSION: 1.212
-  MSP430_GCC_URL: https://dl.ti.com/msp430/msp430_public_sw/mcu/msp430/MSPGCC/9_3_1_2/export
+  MSP430_GCC_PATH: msp430/msp430_public_sw/mcu/msp430/MSPGCC/9_3_1_2/export
 
 jobs:
   msp430:
@@ -53,14 +53,18 @@ jobs:
         if: steps.cache-gcc.outputs.cache-hit != 'true'
         run: |
           mkdir -p ~/msp430-gcc && cd ~/msp430-gcc
+          # dl.ti.com does not resolve from GitHub runners; software-dl.ti.com is the same CDN.
           fetch() {
-            curl -fsSL --retry 5 --retry-delay 5 --retry-all-errors -o "$1" "$2" || {
-              echo "::error::download failed: $2 (dns: $(getent hosts dl.ti.com || echo none); $(curl -sS -o /dev/null -w 'http=%{http_code}' "$2" 2>&1 | tr '\n' ' '))"
-              exit 1
-            }
+            for host in software-dl.ti.com dl.ti.com; do
+              url="https://$host/$MSP430_GCC_PATH/$2"
+              curl -fsSL --retry 3 --retry-delay 5 --retry-all-errors -o "$1" "$url" && return 0
+              echo "::warning::download failed: $url"
+            done
+            echo "::error::cannot download $2"
+            exit 1
           }
-          fetch gcc.tar.bz2 "$MSP430_GCC_URL/msp430-gcc-${MSP430_GCC_VERSION}_linux64.tar.bz2"
-          fetch support.zip "$MSP430_GCC_URL/msp430-gcc-support-files-${MSP430_SUPPORT_VERSION}.zip"
+          fetch gcc.tar.bz2 "msp430-gcc-${MSP430_GCC_VERSION}_linux64.tar.bz2"
+          fetch support.zip "msp430-gcc-support-files-${MSP430_SUPPORT_VERSION}.zip"
           tar xjf gcc.tar.bz2 && mv msp430-gcc-${MSP430_GCC_VERSION}_linux64 toolchain
           unzip -q support.zip
           rm gcc.tar.bz2 support.zip
