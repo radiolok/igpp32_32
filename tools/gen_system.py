@@ -2,8 +2,8 @@
 """Generate docs/img/system-overview.svg — block diagram of the whole display.
 
 Usage: gen_system.py <Igpp.c> <out.svg>
-The 3x3 panel field shows frameBuffer[0] from the firmware (96x96, column-major,
-12 bytes per column, MSB = top row).
+The 3x3 panel field shows frameBuffer[1] from the firmware (96x96, column-major,
+12 bytes per column, MSB = top row, bit 0 = lit dot).
 """
 import re
 import sys
@@ -12,16 +12,15 @@ src, dst = sys.argv[1], sys.argv[2]
 
 # ---------------------------------------------------------------- frame from firmware
 body = open(src, encoding="utf-8", errors="replace").read()
-first = body[body.index("frameBuffer"):]
-first = first[first.index("{", first.index("{") + 1):]
-first = first[:first.index("}")]
-frame = [int(v, 16) for v in re.findall(r"0x([0-9A-Fa-f]{2})", first)]
+init = body[body.index("frameBuffer"):]
+init = init[:init.index("};")]
+frame = [int(v, 16) for v in re.findall(r"0x([0-9A-Fa-f]{2})", init)][1152:2304]
 assert len(frame) == 1152, len(frame)
 
 
 def lit(x, y):
     b = frame[x * 12 + (y >> 3)]
-    return (b >> (7 - (y & 7))) & 1
+    return ((b >> (7 - (y & 7))) & 1) == 0  # anodes are active-low
 
 
 W, H = 1600, 1200
@@ -117,7 +116,7 @@ for r in range(3):
         text(x + 10, y + TILE - 9, f"ИГПП {r+1}.{c+1}", 11, "#ffd8a8", "start", "700")
 FX1 = GX + 3 * TILE + 2 * GAP
 FY1 = GY + 3 * TILE + 2 * GAP
-text(FX1, GY - 14, "на панелях — кадр по умолчанию из frameBuffer[0]", 11.5, C["mute"], "end")
+text(FX1, GY - 14, "на панелях — кадр из frameBuffer[1] прошивки MSP430", 11.5, C["mute"], "end")
 
 # ---------------------------------------------------------------- anode groups (left)
 AX, AW = 430, 170

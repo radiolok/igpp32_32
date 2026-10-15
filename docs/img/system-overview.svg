@@ -2,13 +2,13 @@
 <title>ГИП10000 на стероидах — структурная схема</title>
 <defs>
 <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M20 0H0V20" fill="none" stroke="#e6e0d0" stroke-width="0.7"/></pattern>
-<marker id="arr-e8590c" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#e8590c"/></marker>
 <marker id="arr-b08900" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#b08900"/></marker>
 <marker id="arr-8a8778" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#8a8778"/></marker>
+<marker id="arr-d6336c" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#d6336c"/></marker>
+<marker id="arr-e8590c" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#e8590c"/></marker>
 <marker id="arr-1f2430" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#1f2430"/></marker>
 <marker id="arr-c92a2a" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#c92a2a"/></marker>
 <marker id="arr-0e7c86" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#0e7c86"/></marker>
-<marker id="arr-d6336c" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#d6336c"/></marker>
 <filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="1.6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
 <pattern id="dots" width="5.5" height="5.5" patternUnits="userSpaceOnUse"><circle cx="2.75" cy="2.75" r="1.7" fill="#4a2f1f"/></pattern>
 </defs>
@@ -3016,7 +3016,7 @@
 <text x="860" y="687" font-size="11" fill="#ffd8a8" text-anchor="start" font-weight="700" >ИГПП 3.2</text>
 <rect x="1044" y="674" width="92" height="18" rx="3" fill="#000" opacity="0.55"/>
 <text x="1050" y="687" font-size="11" fill="#ffd8a8" text-anchor="start" font-weight="700" >ИГПП 3.3</text>
-<text x="1216" y="126" font-size="11.5" fill="#8a8778" text-anchor="end" font-weight="normal" >на панелях — кадр по умолчанию из frameBuffer[0]</text>
+<text x="1216" y="126" font-size="11.5" fill="#8a8778" text-anchor="end" font-weight="normal" >на панелях — кадр из frameBuffer[1] прошивки MSP430</text>
 <rect x="430" y="154" width="170" height="148" rx="8" fill="#ffffff" stroke="#e8590c" stroke-width="2.2"/>
 <rect x="430" y="154" width="170" height="6" rx="3" fill="#e8590c"/>
 <text x="515.0" y="182" font-size="14" fill="#1f2430" text-anchor="middle" font-weight="700" >Анодная группа 1</text>
