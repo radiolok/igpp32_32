@@ -1,0 +1,29 @@
+menu "IGPP display"
+
+    config IGPP_COLUMN_PERIOD_TENTHS_US
+        int "Column period, 0.1 us units"
+        range 100 10000
+        default 1512
+        help
+            Time between two columns of the scan. 96 columns make one frame.
+            The default (151.2 us) is TA0CCR0 = 906 at SMCLK 24 MHz / 4 from the
+            MSP430 firmware in master. It must be replaced with the value measured
+            on the running display (golden capture): the anode pulse doublers
+            only work with the original timing.
+
+    config IGPP_SPI_CLOCK_HZ
+        int "Anode SPI clock, Hz"
+        range 100000 20000000
+        default 6000000
+        help
+            MSP430 firmware: SMCLK 24 MHz / 4 = 6 MHz. Confirm with the capture.
+
+    config IGPP_STALL_TIMEOUT_MS
+        int "Scan stall timeout, ms"
+        range 10 1000
+        default 50
+        help
+            If no frame completes for this long, the cathodes are deselected and
+            the chip reboots.
+
+endmenu

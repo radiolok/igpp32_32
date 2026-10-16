@@ -1,0 +1,74 @@
+name: esp32
+
+on:
+  push:
+    branches: [master, esp-migration]
+    paths:
+      - 'fw-esp32/**'
+      - 'tools/**'
+      - '.github/workflows/esp32.yml'
+  pull_request:
+    paths:
+      - 'fw-esp32/**'
+      - 'tools/**'
+  workflow_dispatch:
+
+jobs:
+  host-tests:
+    name: host tests
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Core tests (C++, ASan/UBSan)
+        run: |
+          echo "::add-matcher::.github/gcc-problem-matcher.json"
+          cmake -S fw-esp32/test/host -B build-host -G Ninja
+          cmake --build build-host
+          ctest --test-dir build-host --output-on-failure
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Tool tests (Python)
+        run: |
+          pip install pillow pytest
+          pytest -q tools
+
+  firmware:
+    name: ESP32-S3 firmware
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Build
+        uses: espressif/esp-idf-ci-action@v1
+        with:
+          esp_idf_version: v5.4.1
+          target: esp32s3
+          path: fw-esp32
+          command: >-
+            idf.py build &&
+            { sh ../tools/check_scan_iram.sh build/igpp.elf > build/iram-check.txt; r=$?; cat build/iram-check.txt; [ $r -eq 0 ]; } &&
+            cd build &&
+            esptool.py --chip esp32s3 merge_bin -o igpp-esp32s3-full.bin @flash_args
+
+      - name: Report
+        run: |
+          grep -h '::' fw-esp32/build/iram-check.txt || true
+          for f in fw-esp32/build/igpp.bin fw-esp32/build/igpp-esp32s3-full.bin; do
+            echo "::notice::$(basename $f): $(stat -c%s $f) bytes"
+          done
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: igpp-esp32s3
+          path: |
+            fw-esp32/build/igpp.bin
+            fw-esp32/build/igpp.elf
+            fw-esp32/build/igpp-esp32s3-full.bin
+            fw-esp32/build/bootloader/bootloader.bin
+            fw-esp32/build/partition_table/partition-table.bin
+            fw-esp32/build/flasher_args.json
+            fw-esp32/build/iram-check.txt
