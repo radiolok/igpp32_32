@@ -1,0 +1,349 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1700" height="1390" viewBox="0 0 1700 1390" font-family="'JetBrains Mono','DejaVu Sans Mono',Consolas,monospace">
+<title>ГИП10000 на стероидах — логика прошивки ESP32-S3</title>
+<defs>
+<pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M20 0H0V20" fill="none" stroke="#e6e0d0" stroke-width="0.7"/></pattern>
+<marker id="a-0e7c86" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#0e7c86"/></marker>
+<marker id="a-1c7ed6" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#1c7ed6"/></marker>
+<marker id="a-1f2430" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#1f2430"/></marker>
+<marker id="a-495057" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#495057"/></marker>
+<marker id="a-7048e8" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#7048e8"/></marker>
+<marker id="a-8a8778" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#8a8778"/></marker>
+<marker id="a-c92a2a" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#c92a2a"/></marker>
+<marker id="a-e8590c" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#e8590c"/></marker>
+<pattern id="dots" width="6" height="6" patternUnits="userSpaceOnUse"><circle cx="3" cy="3" r="1.3" fill="#4a2f1f"/></pattern>
+<pattern id="lit" width="6" height="6" patternUnits="userSpaceOnUse"><circle cx="3" cy="3" r="1.6" fill="#ff8a1e"/></pattern>
+<pattern id="hatch" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="5" stroke="#0e7c86" stroke-width="2"/></pattern>
+</defs>
+<rect width="1700" height="1390" fill="#f6f3ea"/>
+<rect width="1700" height="1390" fill="url(#grid)" opacity="0.6"/>
+<rect x="14" y="14" width="1672" height="1362" fill="none" stroke="#1f2430" stroke-width="1.6"/>
+<text x="40" y="56" font-size="24" fill="#1f2430" text-anchor="start" font-weight="700" >ГИП10000 на стероидах · логика прошивки ESP32-S3</text>
+<text x="40" y="82" font-size="14" fill="#8a8778" text-anchor="start" font-weight="normal" >fw-esp32 · ESP-IDF 5.4 · CPU0 — USB, плеер, носители, сторож · CPU1 — только развёртка в IRAM-прерывании</text>
+<text x="40" y="122" font-size="15" fill="#1f2430" text-anchor="start" font-weight="700" >Запуск</text>
+<line x1="40" y1="129" x2="95.19999999999999" y2="129" stroke="#1f2430" stroke-width="1.4"/>
+<polygon points="40,138 216,138 230,165.0 216,192 40,192" fill="#ffffff" stroke="#495057" stroke-width="1.8"/>
+<text x="139.0" y="160" font-size="12.5" fill="#1f2430" text-anchor="middle" font-weight="700" >ROM</text>
+<text x="139.0" y="178" font-size="10.8" fill="#8a8778" text-anchor="middle" font-weight="normal" >загрузчик 1</text>
+<polygon points="243,138 419,138 433,165.0 419,192 243,192 257,165.0" fill="#fff5f5" stroke="#c92a2a" stroke-width="1.8"/>
+<text x="342.0" y="160" font-size="12.5" fill="#c92a2a" text-anchor="middle" font-weight="700" >Загрузчик 2</text>
+<text x="342.0" y="178" font-size="10.8" fill="#8a8778" text-anchor="middle" font-weight="normal" >хук: MR=0, LATCH</text>
+<polygon points="446,138 622,138 636,165.0 622,192 446,192 460,165.0" fill="#ffffff" stroke="#495057" stroke-width="1.8"/>
+<text x="545.0" y="160" font-size="12.5" fill="#1f2430" text-anchor="middle" font-weight="700" >display::start</text>
+<text x="545.0" y="178" font-size="10.8" fill="#8a8778" text-anchor="middle" font-weight="normal" >ноги, SPI2, таймер</text>
+<polygon points="649,138 825,138 839,165.0 825,192 649,192 663,165.0" fill="#ffffff" stroke="#495057" stroke-width="1.8"/>
+<text x="748.0" y="160" font-size="12.5" fill="#1f2430" text-anchor="middle" font-weight="700" >BOOT зажата?</text>
+<text x="748.0" y="178" font-size="10.8" fill="#8a8778" text-anchor="middle" font-weight="normal" >→ тестовый режим</text>
+<polygon points="852,138 1028,138 1042,165.0 1028,192 852,192 866,165.0" fill="#ffffff" stroke="#495057" stroke-width="1.8"/>
+<text x="951.0" y="160" font-size="12.5" fill="#1f2430" text-anchor="middle" font-weight="700" >storage::mount</text>
+<text x="951.0" y="178" font-size="10.8" fill="#8a8778" text-anchor="middle" font-weight="normal" >SD /sd, флеш /flash</text>
+<polygon points="1055,138 1231,138 1245,165.0 1231,192 1055,192 1069,165.0" fill="#ffffff" stroke="#495057" stroke-width="1.8"/>
+<text x="1154.0" y="160" font-size="12.5" fill="#1f2430" text-anchor="middle" font-weight="700" >player::start</text>
+<text x="1154.0" y="178" font-size="10.8" fill="#8a8778" text-anchor="middle" font-weight="normal" >задача плеера</text>
+<polygon points="1258,138 1434,138 1448,165.0 1434,192 1258,192 1272,165.0" fill="#ffffff" stroke="#495057" stroke-width="1.8"/>
+<text x="1357.0" y="160" font-size="12.5" fill="#1f2430" text-anchor="middle" font-weight="700" >usb_link::start</text>
+<text x="1357.0" y="178" font-size="10.8" fill="#8a8778" text-anchor="middle" font-weight="normal" >USB CDC</text>
+<polygon points="1461,138 1637,138 1651,165.0 1637,192 1461,192 1475,165.0" fill="#ffffff" stroke="#495057" stroke-width="1.8"/>
+<text x="1560.0" y="160" font-size="12.5" fill="#1f2430" text-anchor="middle" font-weight="700" >app_main</text>
+<text x="1560.0" y="178" font-size="10.8" fill="#8a8778" text-anchor="middle" font-weight="normal" >статистика 10 с</text>
+<text x="342.0" y="210" font-size="10.5" fill="#c92a2a" text-anchor="middle" font-weight="700" >через мс после ресета: катоды сброшены</text>
+<rect x="260" y="238" width="770" height="600" rx="12" fill="#eef3ff" stroke="#748ffc" stroke-width="1.6" stroke-dasharray="6 4"/>
+<text x="276" y="262" font-size="15" fill="#748ffc" text-anchor="start" font-weight="700" >CPU0 · задачи FreeRTOS</text>
+<text x="276" y="280" font-size="11.2" fill="#8a8778" text-anchor="start" font-weight="normal" >всё, что может подождать</text>
+<rect x="1290" y="238" width="370" height="600" rx="12" fill="#e6fcf5" stroke="#20c997" stroke-width="1.6" stroke-dasharray="6 4"/>
+<text x="1306" y="262" font-size="15" fill="#20c997" text-anchor="start" font-weight="700" >CPU1 · развёртка</text>
+<text x="1306" y="280" font-size="11.2" fill="#8a8778" text-anchor="start" font-weight="normal" >больше на этом ядре ничего нет</text>
+<text x="1160.0" y="262" font-size="15" fill="#e8590c" text-anchor="middle" font-weight="700" >двойной буфер</text>
+<text x="1160.0" y="280" font-size="11.2" fill="#8a8778" text-anchor="middle" font-weight="normal" >граница ядер</text>
+<text x="40" y="256" font-size="15" fill="#1f2430" text-anchor="start" font-weight="700" >Входы</text>
+<line x1="40" y1="263" x2="86.0" y2="263" stroke="#1f2430" stroke-width="1.4"/>
+<rect x="40" y="284" width="190" height="70" rx="7" fill="#ffffff" stroke="#1c7ed6" stroke-width="2"/>
+<rect x="40" y="284" width="5" height="70" rx="2" fill="#1c7ed6"/>
+<text x="137.0" y="306" font-size="13.5" fill="#1f2430" text-anchor="middle" font-weight="700" >ПК</text>
+<text x="137.0" y="324" font-size="11.2" fill="#8a8778" text-anchor="middle" font-weight="normal" >USB CDC, нативный</text>
+<text x="137.0" y="340" font-size="11.2" fill="#8a8778" text-anchor="middle" font-weight="normal" >igpp.py / igv.py</text>
+<rect x="40" y="464" width="190" height="70" rx="7" fill="#ffffff" stroke="#7048e8" stroke-width="2"/>
+<rect x="40" y="464" width="5" height="70" rx="2" fill="#7048e8"/>
+<text x="137.0" y="486" font-size="13.5" fill="#1f2430" text-anchor="middle" font-weight="700" >microSD</text>
+<text x="137.0" y="504" font-size="11.2" fill="#8a8778" text-anchor="middle" font-weight="normal" >/sd · SPI3</text>
+<text x="137.0" y="520" font-size="11.2" fill="#8a8778" text-anchor="middle" font-weight="normal" >.igv, папки .bin</text>
+<rect x="40" y="556" width="190" height="70" rx="7" fill="#ffffff" stroke="#7048e8" stroke-width="2"/>
+<rect x="40" y="556" width="5" height="70" rx="2" fill="#7048e8"/>
+<text x="137.0" y="578" font-size="13.5" fill="#1f2430" text-anchor="middle" font-weight="700" >Флеш FAT</text>
+<text x="137.0" y="596" font-size="11.2" fill="#8a8778" text-anchor="middle" font-weight="normal" >/flash · ~13,9 МБ</text>
+<text x="137.0" y="612" font-size="11.2" fill="#8a8778" text-anchor="middle" font-weight="normal" >запасной носитель</text>
+<rect x="40" y="686" width="190" height="70" rx="7" fill="#ffffff" stroke="#1c7ed6" stroke-width="2"/>
+<rect x="40" y="686" width="5" height="70" rx="2" fill="#1c7ed6"/>
+<text x="137.0" y="708" font-size="13.5" fill="#1f2430" text-anchor="middle" font-weight="700" >Кнопка BOOT</text>
+<text x="137.0" y="726" font-size="11.2" fill="#8a8778" text-anchor="middle" font-weight="normal" >GPIO0</text>
+<text x="137.0" y="742" font-size="11.2" fill="#8a8778" text-anchor="middle" font-weight="normal" >следующий элемент</text>
+<rect x="284" y="300" width="200" height="96" rx="7" fill="#ffffff" stroke="#1c7ed6" stroke-width="2"/>
+<rect x="284" y="300" width="5" height="96" rx="2" fill="#1c7ed6"/>
+<text x="386.0" y="322" font-size="13.5" fill="#1f2430" text-anchor="middle" font-weight="700" >usb_link</text>
+<text x="386.0" y="340" font-size="11.2" fill="#8a8778" text-anchor="middle" font-weight="normal" >чтение по 512 Б</text>
+<text x="386.0" y="356" font-size="11.2" fill="#8a8778" text-anchor="middle" font-weight="normal" >StreamParser:</text>
+<text x="386.0" y="372" font-size="11.2" fill="#8a8778" text-anchor="middle" font-weight="normal" >сырой кадр | IGP2</text>
+<rect x="425.2" y="291" width="52.8" height="18" rx="9" fill="#1c7ed6"/>
+<text x="451.6" y="304" font-size="10.5" fill="#ffffff" text-anchor="middle" font-weight="700" >prio 6</text>
+<path d="M230 310 L281 310" fill="none" stroke="#1c7ed6" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#a-1c7ed6)"/>
+<path d="M284 338 L233 338" fill="none" stroke="#1c7ed6" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" stroke-dasharray="5 4" marker-end="url(#a-1c7ed6)"/>
+<rect x="233.75" y="329" width="46.5" height="17" rx="8.5" fill="#f6f3ea" stroke="#1c7ed6" stroke-width="1.1"/>
+<text x="257.0" y="341.8" font-size="10.8" fill="#1c7ed6" text-anchor="middle" font-weight="700" >ответ</text>
+<rect x="284" y="690" width="200" height="78" rx="7" fill="#ffffff" stroke="#1c7ed6" stroke-width="2"/>
+<rect x="284" y="690" width="5" height="78" rx="2" fill="#1c7ed6"/>
+<text x="386.0" y="712" font-size="13.5" fill="#1f2430" text-anchor="middle" font-weight="700" >button</text>
+<text x="386.0" y="730" font-size="11.2" fill="#8a8778" text-anchor="middle" font-weight="normal" >опрос 10 мс</text>
+<text x="386.0" y="746" font-size="11.2" fill="#8a8778" text-anchor="middle" font-weight="normal" >антидребезг 30 мс</text>
+<rect x="425.2" y="681" width="52.8" height="18" rx="9" fill="#1c7ed6"/>
+<text x="451.6" y="694" font-size="10.5" fill="#ffffff" text-anchor="middle" font-weight="700" >prio 4</text>
+<path d="M230 721 L281 721" fill="none" stroke="#1c7ed6" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#a-1c7ed6)"/>
+<rect x="560" y="300" width="220" height="96" rx="7" fill="#ffffff" stroke="#1c7ed6" stroke-width="2"/>
+<rect x="560" y="300" width="5" height="96" rx="2" fill="#1c7ed6"/>
+<text x="672.0" y="322" font-size="13.5" fill="#1f2430" text-anchor="middle" font-weight="700" >команды IGP2</text>
+<text x="672.0" y="340" font-size="11.2" fill="#8a8778" text-anchor="middle" font-weight="normal" >Play · Next · Stop · Resume</text>
+<text x="672.0" y="356" font-size="11.2" fill="#8a8778" text-anchor="middle" font-weight="normal" >Status · List · Ping</text>
+<text x="672.0" y="372" font-size="11.2" fill="#8a8778" text-anchor="middle" font-weight="normal" >File Open / Data / Close</text>
+<path d="M484 334 L557 334" fill="none" stroke="#1c7ed6" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#a-1c7ed6)"/>
+<rect x="498.75" y="325" width="46.5" height="17" rx="8.5" fill="#f6f3ea" stroke="#1c7ed6" stroke-width="1.1"/>
+<text x="522.0" y="337.8" font-size="10.8" fill="#1c7ed6" text-anchor="middle" font-weight="700" >пакет</text>
+<rect x="520" y="476" width="300" height="150" rx="7" fill="#ffffff" stroke="#e8590c" stroke-width="2"/>
+<rect x="520" y="476" width="5" height="150" rx="2" fill="#e8590c"/>
+<text x="672.0" y="498" font-size="13.5" fill="#1f2430" text-anchor="middle" font-weight="700" >player</text>
+<rect x="761.2" y="467" width="52.8" height="18" rx="9" fill="#e8590c"/>
+<text x="787.6" y="480" font-size="10.5" fill="#ffffff" text-anchor="middle" font-weight="700" >prio 5</text>
+<text x="538" y="520" font-size="11.8" fill="#1c7ed6" text-anchor="start" font-weight="700" >live_frame()</text>
+<text x="538" y="532" font-size="10.3" fill="#8a8778" text-anchor="start" font-weight="normal" >кадр с USB сразу в submit, режим Live</text>
+<text x="538" y="546" font-size="11.8" fill="#1f2430" text-anchor="start" font-weight="700" >плейлист</text>
+<text x="538" y="558" font-size="10.3" fill="#8a8778" text-anchor="start" font-weight="normal" >*.igv · папки .bin · встроенные узоры</text>
+<text x="538" y="572" font-size="11.8" fill="#1f2430" text-anchor="start" font-weight="700" >Source::read → submit</text>
+<text x="538" y="584" font-size="10.3" fill="#8a8778" text-anchor="start" font-weight="normal" >темп из .igv, xTaskDelayUntil</text>
+<text x="538" y="598" font-size="11.8" fill="#1f2430" text-anchor="start" font-weight="700" >короткие повторяются</text>
+<text x="538" y="610" font-size="10.3" fill="#8a8778" text-anchor="start" font-weight="normal" >до 20 с, потом следующий</text>
+<path d="M454 396 L454 446 L550 446 L550 473" fill="none" stroke="#1c7ed6" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#a-1c7ed6)"/>
+<rect x="434.2" y="423" width="39.6" height="17" rx="8.5" fill="#f6f3ea" stroke="#1c7ed6" stroke-width="1.1"/>
+<text x="454.0" y="435.8" font-size="10.8" fill="#1c7ed6" text-anchor="middle" font-weight="700" >кадр</text>
+<path d="M700 396 L700 473" fill="none" stroke="#1c7ed6" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#a-1c7ed6)"/>
+<rect x="645.7" y="427" width="108.60000000000001" height="17" rx="8.5" fill="#f6f3ea" stroke="#1c7ed6" stroke-width="1.1"/>
+<text x="700.0" y="439.8" font-size="10.8" fill="#1c7ed6" text-anchor="middle" font-weight="700" >режим / индекс</text>
+<path d="M230 499 L250 499 L250 546" fill="none" stroke="#7048e8" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M230 591 L250 591 L250 546" fill="none" stroke="#7048e8" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M250 546 L517 546" fill="none" stroke="#7048e8" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#a-7048e8)"/>
+<rect x="368.3" y="537" width="53.400000000000006" height="17" rx="8.5" fill="#f6f3ea" stroke="#7048e8" stroke-width="1.1"/>
+<text x="395.0" y="549.8" font-size="10.8" fill="#7048e8" text-anchor="middle" font-weight="700" >чтение</text>
+<circle cx="250" cy="546" r="4" fill="#7048e8"/>
+<path d="M374 690 L374 647 L560 647 L560 629" fill="none" stroke="#1c7ed6" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#a-1c7ed6)"/>
+<rect x="435.3" y="638" width="53.400000000000006" height="17" rx="8.5" fill="#f6f3ea" stroke="#1c7ed6" stroke-width="1.1"/>
+<text x="462.0" y="650.8" font-size="10.8" fill="#1c7ed6" text-anchor="middle" font-weight="700" >next()</text>
+<rect x="520" y="690" width="300" height="116" rx="7" fill="#fff5f5" stroke="#c92a2a" stroke-width="2"/>
+<rect x="520" y="690" width="5" height="116" rx="2" fill="#c92a2a"/>
+<text x="672.0" y="712" font-size="13.5" fill="#1f2430" text-anchor="middle" font-weight="700" >scan_mon · сторож</text>
+<text x="672.0" y="730" font-size="11.2" fill="#8a8778" text-anchor="middle" font-weight="normal" >каждые 5 мс: растёт ли счётчик кадров?</text>
+<text x="672.0" y="746" font-size="11.2" fill="#8a8778" text-anchor="middle" font-weight="normal" >нет 50 мс → emergency_off():</text>
+<text x="672.0" y="762" font-size="11.2" fill="#8a8778" text-anchor="middle" font-weight="normal" >флаг стоп, пауза на столбец,</text>
+<text x="672.0" y="778" font-size="11.2" fill="#8a8778" text-anchor="middle" font-weight="normal" >MR катодов=0 + LATCH → esp_restart()</text>
+<rect x="734.0" y="681" width="80.0" height="18" rx="9" fill="#c92a2a"/>
+<text x="774.0" y="694" font-size="10.5" fill="#ffffff" text-anchor="middle" font-weight="700" >prio max-2</text>
+<rect x="830" y="300" width="176" height="96" rx="7" fill="#ffffff" stroke="#7048e8" stroke-width="2"/>
+<rect x="830" y="300" width="5" height="96" rx="2" fill="#7048e8"/>
+<text x="920.0" y="322" font-size="13.5" fill="#1f2430" text-anchor="middle" font-weight="700" >загрузка файла</text>
+<text x="920.0" y="340" font-size="11.2" fill="#8a8778" text-anchor="middle" font-weight="normal" >в /sd, иначе /flash</text>
+<text x="920.0" y="356" font-size="11.2" fill="#8a8778" text-anchor="middle" font-weight="normal" >fwrite по кускам</text>
+<text x="920.0" y="372" font-size="11.2" fill="#8a8778" text-anchor="middle" font-weight="normal" >→ rescan плейлиста</text>
+<path d="M780 370 L827 370" fill="none" stroke="#7048e8" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#a-7048e8)"/>
+<rect x="781.75" y="361" width="46.5" height="17" rx="8.5" fill="#f6f3ea" stroke="#7048e8" stroke-width="1.1"/>
+<text x="805.0" y="373.8" font-size="10.8" fill="#7048e8" text-anchor="middle" font-weight="700" >File*</text>
+<path d="M852 396 L852 520 L823 520" fill="none" stroke="#7048e8" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" stroke-dasharray="5 4" marker-end="url(#a-7048e8)"/>
+<rect x="825.3" y="427" width="53.400000000000006" height="17" rx="8.5" fill="#f6f3ea" stroke="#7048e8" stroke-width="1.1"/>
+<text x="852.0" y="439.8" font-size="10.8" fill="#7048e8" text-anchor="middle" font-weight="700" >rescan</text>
+<rect x="866" y="476" width="140" height="150" rx="7" fill="#ffffff" stroke="#e8590c" stroke-width="2"/>
+<rect x="866" y="476" width="5" height="150" rx="2" fill="#e8590c"/>
+<text x="938.0" y="498" font-size="13.5" fill="#1f2430" text-anchor="middle" font-weight="700" >submit()</text>
+<text x="938.0" y="516" font-size="11.2" fill="#8a8778" text-anchor="middle" font-weight="normal" >мьютекс</text>
+<text x="938.0" y="532" font-size="11.2" fill="#8a8778" text-anchor="middle" font-weight="normal" >ждать, пока</text>
+<text x="938.0" y="548" font-size="11.2" fill="#8a8778" text-anchor="middle" font-weight="normal" >pending = 0</text>
+<text x="938.0" y="564" font-size="11.2" fill="#8a8778" text-anchor="middle" font-weight="normal" >memcpy → back</text>
+<text x="938.0" y="580" font-size="11.2" fill="#8a8778" text-anchor="middle" font-weight="normal" >pending = 1</text>
+<path d="M820 586 L863 586" fill="none" stroke="#e8590c" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#a-e8590c)"/>
+<rect x="866" y="690" width="140" height="116" rx="7" fill="#ffffff" stroke="#495057" stroke-width="2"/>
+<rect x="866" y="690" width="5" height="116" rx="2" fill="#495057"/>
+<text x="938.0" y="712" font-size="13.5" fill="#1f2430" text-anchor="middle" font-weight="700" >app_main</text>
+<text x="938.0" y="730" font-size="11.2" fill="#8a8778" text-anchor="middle" font-weight="normal" >раз в 10 с:</text>
+<text x="938.0" y="746" font-size="11.2" fill="#8a8778" text-anchor="middle" font-weight="normal" >частота скана,</text>
+<text x="938.0" y="762" font-size="11.2" fill="#8a8778" text-anchor="middle" font-weight="normal" >кадры, USB rx</text>
+<text x="938.0" y="778" font-size="11.2" fill="#8a8778" text-anchor="middle" font-weight="normal" >→ консоль UART</text>
+<rect x="1076" y="304" width="168" height="128" rx="6" fill="#0d0806"/>
+<rect x="1080" y="308" width="160" height="120" fill="#1d1410"/>
+<rect x="1080" y="308" width="160" height="120" fill="url(#dots)"/>
+<text x="1160" y="448" font-size="12.5" fill="#1f2430" text-anchor="middle" font-weight="700" >back · 1152 Б</text>
+<text x="1160" y="464" font-size="10.8" fill="#8a8778" text-anchor="middle" font-weight="normal" >пишет submit()</text>
+<rect x="1076" y="504" width="168" height="128" rx="6" fill="#0d0806"/>
+<rect x="1080" y="508" width="160" height="120" fill="#1d1410"/>
+<rect x="1080" y="508" width="160" height="120" fill="url(#dots)"/>
+<rect x="1134" y="508" width="12" height="120" fill="url(#lit)"/>
+<text x="1160" y="648" font-size="12.5" fill="#1f2430" text-anchor="middle" font-weight="700" >front · 1152 Б</text>
+<text x="1160" y="664" font-size="10.8" fill="#8a8778" text-anchor="middle" font-weight="normal" >читает ISR</text>
+<path d="M1006 536 L1054 536 L1054 368 L1073 368" fill="none" stroke="#e8590c" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#a-e8590c)"/>
+<path d="M1066 378 L1066 558" fill="none" stroke="#e8590c" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" stroke-dasharray="4 3" marker-end="url(#a-e8590c)"/>
+<path d="M1066 558 L1066 378" fill="none" stroke="#e8590c" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" stroke-dasharray="4 3" marker-end="url(#a-e8590c)"/>
+<rect x="1090" y="476" width="166" height="26" rx="13" fill="#fff4e6" stroke="#e8590c" stroke-width="1.3"/>
+<text x="1173.0" y="493" font-size="11.5" fill="#e8590c" text-anchor="middle" font-weight="700" >pending (atomic)</text>
+<text x="1160.0" y="728" font-size="11" fill="#1f2430" text-anchor="middle" font-weight="700" >обмен только на столбце 0 —</text>
+<text x="1160.0" y="744" font-size="11" fill="#1f2430" text-anchor="middle" font-weight="700" >кадр никогда не рвётся</text>
+<text x="1160.0" y="768" font-size="10.8" fill="#8a8778" text-anchor="middle" font-weight="normal" >back свободен для записи,</text>
+<text x="1160.0" y="783" font-size="10.8" fill="#8a8778" text-anchor="middle" font-weight="normal" >когда pending сброшен</text>
+<rect x="1314" y="300" width="322" height="88" rx="7" fill="#ffffff" stroke="#0e7c86" stroke-width="2"/>
+<rect x="1314" y="300" width="5" height="88" rx="2" fill="#0e7c86"/>
+<text x="1477.0" y="322" font-size="13.5" fill="#1f2430" text-anchor="middle" font-weight="700" >GPTimer · аларм каждые T</text>
+<text x="1477.0" y="340" font-size="11.2" fill="#8a8778" text-anchor="middle" font-weight="normal" >T = 151,2 мкс (из master, уточнить)</text>
+<text x="1477.0" y="356" font-size="11.2" fill="#8a8778" text-anchor="middle" font-weight="normal" >96 столбцов → кадр ≈ 69 Гц</text>
+<text x="1477.0" y="372" font-size="11.2" fill="#8a8778" text-anchor="middle" font-weight="normal" >работает и при выключенном кэше</text>
+<rect x="1563.6" y="291" width="66.4" height="18" rx="9" fill="#0e7c86"/>
+<text x="1596.8" y="304" font-size="10.5" fill="#ffffff" text-anchor="middle" font-weight="700" >IRAM ISR</text>
+<rect x="1314" y="404" width="322" height="250" rx="7" fill="#f3fffb" stroke="#0e7c86" stroke-width="2"/>
+<rect x="1314" y="404" width="5" height="250" rx="2" fill="#0e7c86"/>
+<text x="1477.0" y="426" font-size="13.5" fill="#1f2430" text-anchor="middle" font-weight="700" >Scanner::step()</text>
+<circle cx="1340" cy="446" r="10" fill="#0e7c86"/>
+<text x="1340" y="450" font-size="11" fill="#ffffff" text-anchor="middle" font-weight="700" >1</text>
+<text x="1360" y="448" font-size="12" fill="#1f2430" text-anchor="start" font-weight="700" >MR анодов ↓↑</text>
+<text x="1360" y="462" font-size="10.3" fill="#8a8778" text-anchor="start" font-weight="normal" >сброс сдвигового регистра</text>
+<circle cx="1340" cy="479" r="10" fill="#0e7c86"/>
+<text x="1340" y="483" font-size="11" fill="#ffffff" text-anchor="middle" font-weight="700" >2</text>
+<text x="1360" y="481" font-size="12" fill="#1f2430" text-anchor="start" font-weight="700" >SPI2: 12 × 0xFF</text>
+<text x="1360" y="495" font-size="10.3" fill="#8a8778" text-anchor="start" font-weight="normal" >гашение, ждём последний бит</text>
+<circle cx="1340" cy="512" r="10" fill="#0e7c86"/>
+<text x="1340" y="516" font-size="11" fill="#ffffff" text-anchor="middle" font-weight="700" >3</text>
+<text x="1360" y="514" font-size="12" fill="#1f2430" text-anchor="start" font-weight="700" >шаг катода</text>
+<text x="1360" y="528" font-size="10.3" fill="#8a8778" text-anchor="start" font-weight="normal" >столбец 0: MR + DI=1 + такт</text>
+<text x="1360" y="545" font-size="10.8" fill="#e8590c" text-anchor="start" font-weight="700" >столбец 0: обмен буферов</text>
+<circle cx="1340" cy="559" r="10" fill="#0e7c86"/>
+<text x="1340" y="563" font-size="11" fill="#ffffff" text-anchor="middle" font-weight="700" >4</text>
+<text x="1360" y="561" font-size="12" fill="#1f2430" text-anchor="start" font-weight="700" >LATCH обоих</text>
+<text x="1360" y="575" font-size="10.3" fill="#8a8778" text-anchor="start" font-weight="normal" >аноды тёмные, новый катод</text>
+<circle cx="1340" cy="592" r="10" fill="#0e7c86"/>
+<text x="1340" y="596" font-size="11" fill="#ffffff" text-anchor="middle" font-weight="700" >5</text>
+<text x="1360" y="594" font-size="12" fill="#1f2430" text-anchor="start" font-weight="700" >SPI2: 12 байт столбца</text>
+<text x="1360" y="608" font-size="10.3" fill="#8a8778" text-anchor="start" font-weight="normal" >frame_column_for_chain(pos)</text>
+<circle cx="1340" cy="625" r="10" fill="#0e7c86"/>
+<text x="1340" y="629" font-size="11" fill="#ffffff" text-anchor="middle" font-weight="700" >6</text>
+<text x="1360" y="627" font-size="12" fill="#1f2430" text-anchor="start" font-weight="700" >LATCH обоих</text>
+<text x="1360" y="641" font-size="10.3" fill="#8a8778" text-anchor="start" font-weight="normal" >столбец горит до следующего T</text>
+<path d="M1475.0 388 L1475.0 401" fill="none" stroke="#0e7c86" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#a-0e7c86)"/>
+<path d="M1244 568 L1311 568" fill="none" stroke="#e8590c" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#a-e8590c)"/>
+<text x="1279.0" y="560" font-size="10.8" fill="#e8590c" text-anchor="middle" font-weight="700" >столбец</text>
+<rect x="1314" y="672" width="322" height="80" rx="7" fill="#ffffff" stroke="#0e7c86" stroke-width="2"/>
+<rect x="1314" y="672" width="5" height="80" rx="2" fill="#0e7c86"/>
+<text x="1477.0" y="694" font-size="13.5" fill="#1f2430" text-anchor="middle" font-weight="700" >HwPort</text>
+<text x="1477.0" y="712" font-size="11.2" fill="#8a8778" text-anchor="middle" font-weight="normal" >GPIO W1TS / W1TC — одна запись</text>
+<text x="1477.0" y="728" font-size="11.2" fill="#8a8778" text-anchor="middle" font-weight="normal" >SPI2 через регистры, без DMA</text>
+<text x="1477.0" y="744" font-size="11.2" fill="#8a8778" text-anchor="middle" font-weight="normal" >12 байт в буфере W0–W2</text>
+<path d="M1475.0 654 L1475.0 669" fill="none" stroke="#0e7c86" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#a-0e7c86)"/>
+<rect x="1314" y="776" width="156" height="30" rx="6" fill="#ffffff" stroke="#e8590c" stroke-width="2"/>
+<text x="1392" y="796" font-size="11.2" fill="#e8590c" text-anchor="middle" font-weight="700" >Up block · аноды</text>
+<path d="M1392 752 L1392 773" fill="none" stroke="#e8590c" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#a-e8590c)"/>
+<rect x="1480" y="776" width="156" height="30" rx="6" fill="#ffffff" stroke="#0e7c86" stroke-width="2"/>
+<text x="1558" y="796" font-size="11.2" fill="#0e7c86" text-anchor="middle" font-weight="700" >Down block · катоды</text>
+<path d="M1558 752 L1558 773" fill="none" stroke="#0e7c86" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#a-0e7c86)"/>
+<path d="M760 806 L760 852 L1558 852 L1558 809" fill="none" stroke="#c92a2a" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round" stroke-dasharray="6 4" marker-end="url(#a-c92a2a)"/>
+<rect x="1060.85" y="843" width="198.3" height="17" rx="8.5" fill="#f6f3ea" stroke="#c92a2a" stroke-width="1.1"/>
+<text x="1160.0" y="855.8" font-size="10.8" fill="#c92a2a" text-anchor="middle" font-weight="700" >emergency_off: катоды выкл.</text>
+<text x="40" y="900" font-size="15" fill="#1f2430" text-anchor="start" font-weight="700" >Режимы плеера</text>
+<line x1="40" y1="907" x2="159.6" y2="907" stroke="#1f2430" stroke-width="1.4"/>
+<ellipse cx="150" cy="1010" rx="88" ry="38" fill="#ffffff" stroke="#e8590c" stroke-width="2.2"/>
+<text x="150" y="1008" font-size="14" fill="#e8590c" text-anchor="middle" font-weight="700" >Playlist</text>
+<text x="150" y="1025" font-size="10.8" fill="#8a8778" text-anchor="middle" font-weight="normal" >по кругу</text>
+<ellipse cx="430" cy="1010" rx="88" ry="38" fill="#ffffff" stroke="#1c7ed6" stroke-width="2.2"/>
+<text x="430" y="1008" font-size="14" fill="#1c7ed6" text-anchor="middle" font-weight="700" >Live</text>
+<text x="430" y="1025" font-size="10.8" fill="#8a8778" text-anchor="middle" font-weight="normal" >кадры с USB</text>
+<ellipse cx="290" cy="1200" rx="88" ry="38" fill="#ffffff" stroke="#495057" stroke-width="2.2"/>
+<text x="290" y="1198" font-size="14" fill="#495057" text-anchor="middle" font-weight="700" >Stopped</text>
+<text x="290" y="1215" font-size="10.8" fill="#8a8778" text-anchor="middle" font-weight="normal" >панель тёмная</text>
+<path d="M238 998 L342 998" fill="none" stroke="#1c7ed6" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#a-1c7ed6)"/>
+<rect x="249.5" y="971" width="81.0" height="17" rx="8.5" fill="#f6f3ea" stroke="#1c7ed6" stroke-width="1.1"/>
+<text x="290.0" y="983.8" font-size="10.8" fill="#1c7ed6" text-anchor="middle" font-weight="700" >кадр с USB</text>
+<path d="M342 1024 L238 1024" fill="none" stroke="#e8590c" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#a-e8590c)"/>
+<rect x="235.7" y="1033" width="108.60000000000001" height="17" rx="8.5" fill="#f6f3ea" stroke="#e8590c" stroke-width="1.1"/>
+<text x="290.0" y="1045.8" font-size="10.8" fill="#e8590c" text-anchor="middle" font-weight="700" >3 с без кадров</text>
+<path d="M160 1048 L230 1166" fill="none" stroke="#495057" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#a-495057)"/>
+<rect x="140.4" y="1098" width="39.6" height="17" rx="8.5" fill="#f6f3ea" stroke="#495057" stroke-width="1.1"/>
+<text x="160.20000000000002" y="1110.8" font-size="10.8" fill="#495057" text-anchor="middle" font-weight="700" >Stop</text>
+<path d="M262 1164 L190 1050" fill="none" stroke="#e8590c" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#a-e8590c)"/>
+<rect x="234" y="1091" width="150.0" height="17" rx="8.5" fill="#f6f3ea" stroke="#e8590c" stroke-width="1.1"/>
+<text x="309.0" y="1103.8" font-size="10.8" fill="#e8590c" text-anchor="middle" font-weight="700" >Resume / Play / Next</text>
+<path d="M420 1048 L350 1166" fill="none" stroke="#495057" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#a-495057)"/>
+<rect x="400.2" y="1106" width="39.6" height="17" rx="8.5" fill="#f6f3ea" stroke="#495057" stroke-width="1.1"/>
+<text x="420.0" y="1118.8" font-size="10.8" fill="#495057" text-anchor="middle" font-weight="700" >Stop</text>
+<text x="40" y="1270" font-size="11" fill="#8a8778" text-anchor="start" font-weight="normal" >BOOT при включении — тестовый режим: только встроенные узоры</text>
+<text x="600" y="900" font-size="15" fill="#1f2430" text-anchor="start" font-weight="700" >Один столбец (не в масштабе)</text>
+<line x1="600" y1="907" x2="857.5999999999999" y2="907" stroke="#1f2430" stroke-width="1.4"/>
+<text x="738" y="964" font-size="11.5" fill="#1f2430" text-anchor="end" font-weight="700" >ANODE_MR</text>
+<line x1="750" y1="974" x2="1640" y2="974" stroke="#e6e0d0" stroke-width="1"/>
+<text x="738" y="1004" font-size="11.5" fill="#1f2430" text-anchor="end" font-weight="700" >SPI2 SCK</text>
+<line x1="750" y1="1014" x2="1640" y2="1014" stroke="#e6e0d0" stroke-width="1"/>
+<text x="738" y="1044" font-size="11.5" fill="#1f2430" text-anchor="end" font-weight="700" >CATH_SRCLK</text>
+<line x1="750" y1="1054" x2="1640" y2="1054" stroke="#e6e0d0" stroke-width="1"/>
+<text x="738" y="1084" font-size="11.5" fill="#1f2430" text-anchor="end" font-weight="700" >LATCH (оба)</text>
+<line x1="750" y1="1094" x2="1640" y2="1094" stroke="#e6e0d0" stroke-width="1"/>
+<text x="738" y="1124" font-size="11.5" fill="#1f2430" text-anchor="end" font-weight="700" >выходы анодов</text>
+<line x1="750" y1="1134" x2="1640" y2="1134" stroke="#e6e0d0" stroke-width="1"/>
+<text x="738" y="1164" font-size="11.5" fill="#1f2430" text-anchor="end" font-weight="700" >выход катода</text>
+<line x1="750" y1="1174" x2="1640" y2="1174" stroke="#e6e0d0" stroke-width="1"/>
+<polyline points="750.0,948 776.7,948 776.7,970 787.4,970 787.4,948 1613.3,948 1613.3,970 1624.0,970 1624.0,948 1640.0,948" fill="none" stroke="#e8590c" stroke-width="2.2"/>
+<line x1="750" y1="1010" x2="812.3" y2="1010" stroke="#0e7c86" stroke-width="2.2"/>
+<rect x="812.3" y="988" width="151.30000000000007" height="22" fill="url(#hatch)" stroke="#0e7c86" stroke-width="1.6"/>
+<text x="887.95" y="984" font-size="10.5" fill="#0e7c86" text-anchor="middle" font-weight="700" >12 × 0xFF</text>
+<line x1="750" y1="1010" x2="1079.3" y2="1010" stroke="#0e7c86" stroke-width="2.2"/>
+<rect x="1079.3" y="988" width="151.29999999999995" height="22" fill="url(#hatch)" stroke="#0e7c86" stroke-width="1.6"/>
+<text x="1154.9499999999998" y="984" font-size="10.5" fill="#0e7c86" text-anchor="middle" font-weight="700" >12 байт столбца</text>
+<line x1="963.6" y1="1010" x2="1079.3" y2="1010" stroke="#0e7c86" stroke-width="2.2"/>
+<line x1="1230.6" y1="1010" x2="1640" y2="1010" stroke="#0e7c86" stroke-width="2.2"/>
+<polyline points="750.0,1050 999.2,1050 999.2,1028 1009.9,1028 1009.9,1050 1640.0,1050" fill="none" stroke="#0e7c86" stroke-width="2.2"/>
+<polyline points="750.0,1090 1043.7,1090 1043.7,1068 1054.4,1068 1054.4,1090 1266.2,1090 1266.2,1068 1276.9,1068 1276.9,1090 1640.0,1090" fill="none" stroke="#1f2430" stroke-width="2.2"/>
+<rect x="750" y="1107" width="293.70000000000005" height="24" rx="4" fill="#e8590c"/>
+<text x="896.85" y="1123" font-size="10.8" fill="#ffffff" text-anchor="middle" font-weight="700" >столбец N−1</text>
+<rect x="1043.7" y="1107" width="222.49999999999977" height="24" rx="4" fill="#dee2e6"/>
+<text x="1154.9499999999998" y="1123" font-size="10.8" fill="#1f2430" text-anchor="middle" font-weight="700" >погашено</text>
+<rect x="1266.1999999999998" y="1107" width="373.8000000000002" height="24" rx="4" fill="#e8590c"/>
+<text x="1453.1" y="1123" font-size="10.8" fill="#ffffff" text-anchor="middle" font-weight="700" >столбец N горит</text>
+<rect x="750" y="1147" width="293.70000000000005" height="24" rx="4" fill="#0e7c86"/>
+<text x="896.85" y="1163" font-size="10.8" fill="#ffffff" text-anchor="middle" font-weight="700" >катод N−1</text>
+<rect x="1043.7" y="1147" width="596.3" height="24" rx="4" fill="#0e7c86"/>
+<text x="1341.85" y="1163" font-size="10.8" fill="#ffffff" text-anchor="middle" font-weight="700" >катод N</text>
+<line x1="776.7" y1="936" x2="776.7" y2="1184" stroke="#8a8778" stroke-width="1" stroke-dasharray="3 3"/>
+<circle cx="776.7" cy="1196" r="9" fill="#0e7c86"/>
+<text x="776.7" y="1200" font-size="10.5" fill="#ffffff" text-anchor="middle" font-weight="700" >1</text>
+<line x1="812.3" y1="936" x2="812.3" y2="1184" stroke="#8a8778" stroke-width="1" stroke-dasharray="3 3"/>
+<circle cx="812.3" cy="1196" r="9" fill="#0e7c86"/>
+<text x="812.3" y="1200" font-size="10.5" fill="#ffffff" text-anchor="middle" font-weight="700" >2</text>
+<line x1="999.2" y1="936" x2="999.2" y2="1184" stroke="#8a8778" stroke-width="1" stroke-dasharray="3 3"/>
+<circle cx="999.2" cy="1196" r="9" fill="#0e7c86"/>
+<text x="999.2" y="1200" font-size="10.5" fill="#ffffff" text-anchor="middle" font-weight="700" >3</text>
+<line x1="1043.7" y1="936" x2="1043.7" y2="1184" stroke="#8a8778" stroke-width="1" stroke-dasharray="3 3"/>
+<circle cx="1043.7" cy="1196" r="9" fill="#0e7c86"/>
+<text x="1043.7" y="1200" font-size="10.5" fill="#ffffff" text-anchor="middle" font-weight="700" >4</text>
+<line x1="1079.3" y1="936" x2="1079.3" y2="1184" stroke="#8a8778" stroke-width="1" stroke-dasharray="3 3"/>
+<circle cx="1079.3" cy="1196" r="9" fill="#0e7c86"/>
+<text x="1079.3" y="1200" font-size="10.5" fill="#ffffff" text-anchor="middle" font-weight="700" >5</text>
+<line x1="1266.1999999999998" y1="936" x2="1266.1999999999998" y2="1184" stroke="#8a8778" stroke-width="1" stroke-dasharray="3 3"/>
+<circle cx="1266.1999999999998" cy="1196" r="9" fill="#0e7c86"/>
+<text x="1266.1999999999998" y="1200" font-size="10.5" fill="#ffffff" text-anchor="middle" font-weight="700" >6</text>
+<line x1="1613.3" y1="936" x2="1613.3" y2="1184" stroke="#1f2430" stroke-width="1.4" stroke-dasharray="5 3"/>
+<text x="1613.3" y="1200" font-size="10.5" fill="#1f2430" text-anchor="middle" font-weight="700" >следующий T</text>
+<path d="M776.7 1222 L1611.3 1222" fill="none" stroke="#1f2430" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#a-1f2430)"/>
+<path d="M1611.3 1222 L778.7 1222" fill="none" stroke="#1f2430" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#a-1f2430)"/>
+<rect x="1045.0" y="1212" width="300" height="20" fill="#f6f3ea"/>
+<text x="1195.0" y="1226" font-size="11.5" fill="#1f2430" text-anchor="middle" font-weight="700" >T — период столбца, тайминги как в MSP430</text>
+<text x="600" y="1256" font-size="11" fill="#8a8778" text-anchor="start" font-weight="normal" >Шаги 1–6 = Scanner::step(). Каждая передача SPI ждёт выхода последнего бита, как UCBUSY на MSP430.</text>
+<text x="600" y="1274" font-size="11" fill="#8a8778" text-anchor="start" font-weight="normal" >Регистры 74HC595: MR чистит сдвиговый регистр, выходы меняются только по LATCH.</text>
+<line x1="40" y1="1346" x2="70" y2="1346" stroke="#e8590c" stroke-width="3" stroke-linecap="round"/>
+<text x="80" y="1350.5" font-size="12" fill="#1f2430" text-anchor="start" font-weight="normal" >кадры</text>
+<line x1="210" y1="1346" x2="240" y2="1346" stroke="#1c7ed6" stroke-width="3" stroke-linecap="round"/>
+<text x="250" y="1350.5" font-size="12" fill="#1f2430" text-anchor="start" font-weight="normal" >управление</text>
+<line x1="380" y1="1346" x2="410" y2="1346" stroke="#7048e8" stroke-width="3" stroke-linecap="round"/>
+<text x="420" y="1350.5" font-size="12" fill="#1f2430" text-anchor="start" font-weight="normal" >носители</text>
+<line x1="550" y1="1346" x2="580" y2="1346" stroke="#0e7c86" stroke-width="3" stroke-linecap="round"/>
+<text x="590" y="1350.5" font-size="12" fill="#1f2430" text-anchor="start" font-weight="normal" >развёртка</text>
+<line x1="720" y1="1346" x2="750" y2="1346" stroke="#c92a2a" stroke-width="3" stroke-linecap="round"/>
+<text x="760" y="1350.5" font-size="12" fill="#1f2430" text-anchor="start" font-weight="normal" >защита</text>
+<rect x="1356" y="1330" width="330" height="46" fill="#ffffff" stroke="#1f2430" stroke-width="1.6"/>
+<text x="1368" y="1350" font-size="12" fill="#1f2430" text-anchor="start" font-weight="700" >radiolok/igpp32_32 · esp-migration</text>
+<text x="1368" y="1367" font-size="11" fill="#8a8778" text-anchor="start" font-weight="normal" >логика прошивки · лист 3 · rev A</text>
+</svg>

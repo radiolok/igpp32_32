@@ -3,6 +3,10 @@
 ESP32-S3-DevKitC-1 N16R8, ESP-IDF 5.4, C++17. Подключение — `docs/img/esp32-wiring.svg`,
 план переезда — `docs/esp32-migration.md`.
 
+![Логика прошивки](../docs/img/firmware-logic.svg)
+
+Схема генерируется `tools/gen_firmware.py docs/img/firmware-logic.svg`.
+
 ## Сборка и прошивка
 
 ```sh
